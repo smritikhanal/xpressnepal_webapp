@@ -526,6 +526,9 @@ export default function Home() {
                 <div className="absolute bottom-0 right-20 w-32 h-32 bg-white/5 rounded-full" />
               </motion.div>
             </AnimatePresence>
+
+            
+
           </div>
         </section>
       )}
@@ -690,6 +693,43 @@ export default function Home() {
             </span>
           ))}
         </motion.div>
+      </section>
+
+      <section className="py-24 px-6 md:px-12 lg:px-20 bg-gray-50">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            <Badge className="bg-maroon/10 text-maroon mb-6">Join the Club</Badge>
+            <h2 className="text-4xl md:text-6xl font-black mb-6">
+              Stay in the <span className="text-maroon">Loop</span>
+            </h2>
+            <p className="text-gray-500 text-lg mb-8 max-w-2xl mx-auto">
+              Subscribe to get exclusive deals, early access to new drops, and style tips delivered straight to your inbox.
+            </p>
+            
+            <motion.div 
+              whileHover={{ scale: 1.02 }}
+              className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto"
+            >
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-6 py-4 rounded-full border-2 border-black/10 focus:border-maroon focus:outline-none font-medium"
+              />
+              <Button className="bg-black text-white hover:bg-maroon font-bold px-8 py-4 rounded-full whitespace-nowrap">
+                Subscribe
+                <Sparkles className="ml-2 h-4 w-4" />
+              </Button>
+            </motion.div>
+            
+            <p className="text-xs text-gray-400 mt-4">
+              No spam, unsubscribe anytime. We respect your privacy.
+            </p>
+          </motion.div>
+        </div>
       </section>
     </main>
   );
