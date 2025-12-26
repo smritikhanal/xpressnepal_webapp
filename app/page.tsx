@@ -198,6 +198,113 @@ export default function Home() {
   return (
     <main className="bg-white text-black overflow-hidden">
       <BlobCursor />
+
+       {/* Hero Section with Spline */}
+      <motion.section 
+        ref={heroRef}
+        style={{ opacity: heroOpacity, scale: heroScale }}
+        className="relative min-h-screen bg-black overflow-hidden"
+      >
+        {/* Spline 3D Background */}
+        <div className="absolute inset-0 z-0">
+          <Spline 
+            scene="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
+            className="w-full h-full"
+          />
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
+        </div>
+
+        {/* Hero Content */}
+        <div className="relative z-10 min-h-screen flex flex-col justify-center px-6 md:px-12 lg:px-20">
+          <motion.div
+            initial="hidden"
+            animate={isHeroInView ? "show" : "hidden"}
+            variants={staggerContainer}
+            className="max-w-5xl"
+          >
+            {/* Playful badge */}
+            <motion.div variants={fadeInUp} className="mb-6">
+              <Badge className="bg-maroon text-white px-4 py-2 text-sm font-medium rounded-full hover:scale-105 transition-transform cursor-pointer">
+                <Sparkles className="w-4 h-4 mr-2" />
+                New Season Collection 2025
+              </Badge>
+            </motion.div>
+
+            {/* Main headline with playful typography */}
+            <motion.h1 
+              variants={fadeInUp}
+              className="text-5xl md:text-7xl lg:text-8xl font-black text-white leading-[0.9] tracking-tight mb-6"
+            >
+              Shop the
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-300 to-maroon">
+                Extraordinary
+              </span>
+            </motion.h1>
+
+            <motion.p 
+              variants={fadeInUp}
+              className="text-lg md:text-xl text-white/70 max-w-xl mb-8 leading-relaxed"
+            >
+              Discover curated collections that blend style with substance. 
+              Where every product tells a story.
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div variants={fadeInUp} className="flex flex-wrap gap-4">
+              <Link href="/products">
+                <Button 
+                  size="lg" 
+                  className="bg-white text-black hover:bg-gray-100 font-bold px-8 py-6 text-lg rounded-full group transition-all hover:scale-105 hover:shadow-2xl"
+                >
+                  Explore Collection
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+              
+            </motion.div>
+
+            {/* Floating stats */}
+            <motion.div 
+              variants={fadeInUp}
+              className="mt-16 flex gap-12"
+            >
+              {[
+                { value: "10K+", label: "Products" },
+                { value: "50K+", label: "Customers" },
+                { value: "99%", label: "Happy" }
+              ].map((stat, i) => (
+                <motion.div 
+                  key={i}
+                  whileHover={{ scale: 1.05 }}
+                  className="text-white"
+                >
+                  <div className="text-3xl md:text-4xl font-black">{stat.value}</div>
+                  <div className="text-sm text-white/50">{stat.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+
+          {/* Scroll indicator */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          >
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="text-white/50"
+            >
+              <MousePointer2 className="w-5 h-5" />
+            </motion.div>
+            <span className="text-xs text-white/30 uppercase tracking-widest">Scroll to explore</span>
+          </motion.div>
+        </div>
+      </motion.section>
     
       {/* Flash Sale Section */}
       <section className="py-16 px-6 md:px-12 lg:px-20 bg-gradient-to-r from-maroon via-red-600 to-orange-500">
