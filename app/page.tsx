@@ -142,28 +142,149 @@ export default function Home() {
   // Fetch data
   useEffect(() => {
     const fetchData = async () => {
+      const fallbackProducts = [
+        {
+          _id: "p1",
+          name: "Sample Product 1",
+          slug: "sample-product-1",
+          description: "A great product for demonstration.",
+          price: 100,
+          image: "/placeholder1.jpg",
+          category: "Fashion",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "p2",
+          name: "Sample Product 2",
+          slug: "sample-product-2",
+          description: "Another awesome product.",
+          price: 200,
+          image: "/placeholder2.jpg",
+          category: "Electronics",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "p3",
+          name: "Sample Product 3",
+          slug: "sample-product-3",
+          description: "Best seller item.",
+          price: 150,
+          image: "/placeholder3.jpg",
+          category: "Home & Living",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "p4",
+          name: "Sample Product 4",
+          slug: "sample-product-4",
+          description: "Popular choice.",
+          price: 120,
+          image: "/placeholder4.jpg",
+          category: "Beauty",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "p5",
+          name: "Sample Product 5",
+          slug: "sample-product-5",
+          description: "Limited edition.",
+          price: 180,
+          image: "/placeholder5.jpg",
+          category: "Sports",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
+      const fallbackCategories = [
+        {
+          _id: "1",
+          name: "Fashion",
+          slug: "fashion",
+          description: "Latest trends in clothing and accessories.",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "2",
+          name: "Electronics",
+          slug: "electronics",
+          description: "Gadgets, devices, and more.",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "3",
+          name: "Home & Living",
+          slug: "home-living",
+          description: "Essentials for your home.",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "4",
+          name: "Beauty",
+          slug: "beauty",
+          description: "Skincare, makeup, and wellness.",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "5",
+          name: "Sports",
+          slug: "sports",
+          description: "Gear and apparel for active lifestyles.",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: "6",
+          name: "Kids",
+          slug: "kids",
+          description: "Toys, clothing, and more for children.",
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ];
       try {
         const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-        
         const [productsRes, categoriesRes] = await Promise.all([
           fetch(`${backendUrl}/api/products?limit=10`, { cache: 'no-store' }),
           fetch(`${backendUrl}/api/categories?limit=6`, { cache: 'no-store' })
         ]);
-
-        const productsData = productsRes.ok ? await productsRes.json() : null;
-        const categoriesData = categoriesRes.ok ? await categoriesRes.json() : null;
-
-        const allProducts = productsData?.data?.products || [];
-        
-        // Use first 4 products for flash sale, next 5 for trending
+        let productsData = null;
+        let categoriesData = null;
+        if (productsRes.ok) {
+          productsData = await productsRes.json();
+        }
+        if (categoriesRes.ok) {
+          categoriesData = await categoriesRes.json();
+        }
+        const allProducts = productsData?.data?.products || fallbackProducts;
         setFlashSaleProducts(allProducts.slice(0, 4));
         setProducts(allProducts.slice(0, 5));
-        setCategories(categoriesData?.data?.categories || []);
+        setCategories(categoriesData?.data?.categories || fallbackCategories);
       } catch (error) {
-        console.error('Error fetching home page data:', error);
+        // Prevent error from breaking UI, use static data
+        setFlashSaleProducts(fallbackProducts.slice(0, 4));
+        setProducts(fallbackProducts.slice(0, 5));
+        setCategories(fallbackCategories);
       }
     };
-
     fetchData();
   }, []);
 
@@ -499,36 +620,7 @@ export default function Home() {
             </motion.div>
 
             {/* Featured Category Display */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeCategory}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="relative bg-black rounded-3xl p-8 md:p-12 overflow-hidden min-h-[300px]"
-              >
-                <div className="relative z-10">
-                  <Badge className="bg-maroon text-white mb-4">Featured</Badge>
-                  <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
-                    {categories[activeCategory]?.name || "Category"}
-                  </h3>
-                  <p className="text-white/60 max-w-md mb-6">
-                    {categories[activeCategory]?.description || "Explore our curated collection"}
-                  </p>
-                  <Link href={`/categories/${categories[activeCategory]?.slug}`}>
-                    <Button className="bg-white text-black hover:bg-gray-100 font-bold rounded-full">
-                      Shop Now <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-                {/* Abstract shapes */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-maroon/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-20 w-32 h-32 bg-white/5 rounded-full" />
-              </motion.div>
-            </AnimatePresence>
-
             
-
           </div>
         </section>
       )}
@@ -675,6 +767,89 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Categories Section - Interactive Pills */}
+      {categories.length > 0 && (
+        <section className="py-24 px-6 md:px-12 lg:px-20 bg-gray-50">
+          <div className="max-w-7xl mx-auto">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12"
+            >
+              <div>
+                <h2 className="text-4xl md:text-5xl font-black mb-4">
+                  Browse by <span className="text-maroon">Category</span>
+                </h2>
+                <p className="text-gray-500">Find exactly what you&apos;re looking for</p>
+              </div>
+              <Link href="/categories">
+                <Button variant="ghost" className="font-bold group">
+                  View All Categories 
+                  <ArrowUpRight className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </Button>
+              </Link>
+            </motion.div>
+
+            {/* Category Pills */}
+            <motion.div 
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              variants={staggerContainer}
+              className="flex flex-wrap gap-3 mb-12"
+            >
+              {categories.map((category: Category, i: number) => (
+                <motion.div key={category._id} variants={scaleIn}>
+                  <Link href={`/categories/${category.slug}`}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`px-6 py-3 rounded-full font-bold text-sm transition-all cursor-pointer ${
+                        i === activeCategory
+                          ? 'bg-black text-white shadow-lg'
+                          : 'bg-white text-black border-2 border-black/10 hover:border-maroon hover:text-maroon'
+                      }`}
+                    >
+                      {category.name}
+                    </motion.div>
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Featured Category Display */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeCategory}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="relative bg-black rounded-3xl p-8 md:p-12 overflow-hidden min-h-[300px]"
+              >
+                <div className="relative z-10">
+                  <Badge className="bg-maroon text-white mb-4">Featured</Badge>
+                  <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
+                    {categories[activeCategory]?.name || "Category"}
+                  </h3>
+                  <p className="text-white/60 max-w-md mb-6">
+                    {categories[activeCategory]?.description || "Explore our curated collection"}
+                  </p>
+                  <Link href={`/categories/${categories[activeCategory]?.slug}`}>
+                    <Button className="bg-white text-black hover:bg-gray-100 font-bold rounded-full">
+                      Shop Now <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+                {/* Abstract shapes */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-maroon/20 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-20 w-32 h-32 bg-white/5 rounded-full" />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </section>
+      )}
 
 
 
