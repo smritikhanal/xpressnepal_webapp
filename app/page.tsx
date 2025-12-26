@@ -620,7 +620,33 @@ export default function Home() {
             </motion.div>
 
             {/* Featured Category Display */}
-            
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeCategory}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="relative bg-black rounded-3xl p-8 md:p-12 overflow-hidden min-h-[300px]"
+              >
+                <div className="relative z-10">
+                  <Badge className="bg-maroon text-white mb-4">Featured</Badge>
+                  <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
+                    {categories[activeCategory]?.name || "Category"}
+                  </h3>
+                  <p className="text-white/60 max-w-md mb-6">
+                    {categories[activeCategory]?.description || "Explore our curated collection"}
+                  </p>
+                  <Link href={`/categories/${categories[activeCategory]?.slug}`}>
+                    <Button className="bg-white text-black hover:bg-gray-100 font-bold rounded-full">
+                      Shop Now <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+                {/* Abstract shapes */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-maroon/20 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-20 w-32 h-32 bg-white/5 rounded-full" />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </section>
       )}
