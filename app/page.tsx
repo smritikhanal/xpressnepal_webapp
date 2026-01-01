@@ -145,64 +145,94 @@ export default function Home() {
       const fallbackProducts = [
         {
           _id: "p1",
-          name: "Sample Product 1",
+          title: "Sample Product 1",
           slug: "sample-product-1",
           description: "A great product for demonstration.",
-          price: 100,
-          image: "/placeholder1.jpg",
+          price: 1250,
+          images: [
+            "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
+          ],
           category: "Fashion",
+          categoryId: "1",
+          stock: 100,
+          ratingAvg: 4.5,
+          ratingCount: 10,
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "p2",
-          name: "Sample Product 2",
+          title: "Sample Product 2",
           slug: "sample-product-2",
           description: "Another awesome product.",
-          price: 200,
-          image: "/placeholder2.jpg",
+          price: 240000,
+          images: [
+            "https://media.gadgetbytenepal.com/2025/09/1757575327_0.jpg",
+          ],
           category: "Electronics",
+          categoryId: "2",
+          stock: 50,
+          ratingAvg: 4.2,
+          ratingCount: 8,
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "p3",
-          name: "Sample Product 3",
+          title: "Sample Product 3",
           slug: "sample-product-3",
           description: "Best seller item.",
-          price: 150,
-          image: "/placeholder3.jpg",
+          price: 179000,
+          images: [
+            "https://media.gadgetbytenepal.com/2025/01/Samsung-Galaxy-S25-Ultra-Titanium-Silverbue.jpg",
+          ],
           category: "Home & Living",
+          categoryId: "3",
+          stock: 30,
+          ratingAvg: 4.8,
+          ratingCount: 15,
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "p4",
-          name: "Sample Product 4",
+          title: "Sample Product 4",
           slug: "sample-product-4",
           description: "Popular choice.",
-          price: 120,
-          image: "/placeholder4.jpg",
+          price: 32000,
+          images: [
+            "https://cdn-1.azazie.com/upimg/h65/9b/71/5fa2b0951fe5c3535716b20263a09b71.jpg.webp",
+          ],
           category: "Beauty",
+          categoryId: "4",
+          stock: 80,
+          ratingAvg: 4.0,
+          ratingCount: 5,
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "p5",
-          name: "Sample Product 5",
+          title: "Sample Product 5",
           slug: "sample-product-5",
           description: "Limited edition.",
           price: 180,
-          image: "/placeholder5.jpg",
+          images: [
+            "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
+          ],
           category: "Sports",
+          categoryId: "5",
+          stock: 200,
+          ratingAvg: 4.7,
+          ratingCount: 20,
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
+          updatedAt: new Date().toISOString(),
+        },
       ];
       const fallbackCategories = [
         {
@@ -212,7 +242,7 @@ export default function Home() {
           description: "Latest trends in clothing and accessories.",
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "2",
@@ -221,7 +251,7 @@ export default function Home() {
           description: "Gadgets, devices, and more.",
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "3",
@@ -230,7 +260,7 @@ export default function Home() {
           description: "Essentials for your home.",
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "4",
@@ -239,7 +269,7 @@ export default function Home() {
           description: "Skincare, makeup, and wellness.",
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "5",
@@ -248,7 +278,7 @@ export default function Home() {
           description: "Gear and apparel for active lifestyles.",
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         },
         {
           _id: "6",
@@ -257,14 +287,15 @@ export default function Home() {
           description: "Toys, clothing, and more for children.",
           isActive: true,
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
+          updatedAt: new Date().toISOString(),
+        },
       ];
-      try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+       try {
+        const backendUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
         const [productsRes, categoriesRes] = await Promise.all([
-          fetch(`${backendUrl}/api/products?limit=10`, { cache: 'no-store' }),
-          fetch(`${backendUrl}/api/categories?limit=6`, { cache: 'no-store' })
+          fetch(`${backendUrl}/api/products?limit=10`, { cache: "no-store" }),
+          fetch(`${backendUrl}/api/categories?limit=6`, { cache: "no-store" }),
         ]);
         let productsData = null;
         let categoriesData = null;
@@ -279,12 +310,13 @@ export default function Home() {
         setProducts(allProducts.slice(0, 5));
         setCategories(categoriesData?.data?.categories || fallbackCategories);
       } catch (error) {
-        // Prevent error from breaking UI, use static data
         setFlashSaleProducts(fallbackProducts.slice(0, 4));
         setProducts(fallbackProducts.slice(0, 5));
         setCategories(fallbackCategories);
+        console.error('Error fetching home page data:', error);
       }
     };
+
     fetchData();
   }, []);
 
@@ -319,8 +351,8 @@ export default function Home() {
   return (
     <main className="bg-white text-black overflow-hidden">
       <BlobCursor />
-
-       {/* Hero Section with Spline */}
+      
+      {/* Hero Section with Spline */}
       <motion.section 
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
@@ -426,7 +458,12 @@ export default function Home() {
           </motion.div>
         </div>
       </motion.section>
-    
+
+      {/* Marquee Section */}
+      <section className="bg-black py-8 border-y border-white/10">
+        <MarqueeText text="XPRESS NEPAL •" />
+      </section>
+
       {/* Flash Sale Section */}
       <section className="py-16 px-6 md:px-12 lg:px-20 bg-gradient-to-r from-maroon via-red-600 to-orange-500">
         <div className="max-w-7xl mx-auto">
@@ -672,230 +709,77 @@ export default function Home() {
               </Button>
             </Link>
           </motion.div>
-
-          {products.length > 0 ? (
-            <motion.div 
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-50px" }}
-              variants={staggerContainer}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            >
-              {products.map((product: Product) => (
-                <motion.div
-                  key={product._id}
-                  variants={fadeInUp}
-                  onMouseEnter={() => setHoveredProduct(product._id)}
-                  onMouseLeave={() => setHoveredProduct(null)}
-                >
-                  <Link href={`/products/${product.slug}`}>
-                    <Card className="group border-0 shadow-none hover:shadow-2xl transition-all duration-500 overflow-hidden bg-gray-50 rounded-3xl">
-                      <div className="relative aspect-square overflow-hidden">
-                        {/* Discount Badge */}
-                        {product.discountPrice && product.discountPrice < product.price && (
-                          <Badge className="absolute top-4 left-4 bg-maroon text-white z-10 font-bold">
-                            -{Math.round(((product.price - product.discountPrice) / product.price) * 100)}%
-                          </Badge>
-                        )}
-                        
-                        {/* Wishlist Button */}
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="absolute top-4 right-4 z-10 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => e.preventDefault()}
-                        >
-                          <Heart className="w-5 h-5 text-gray-700" />
-                        </motion.button>
-
-                        {/* Product Image */}
-                        <motion.div
-                          animate={{ scale: hoveredProduct === product._id ? 1.08 : 1 }}
-                          transition={{ duration: 0.4 }}
-                          className="w-full h-full"
-                        >
-                          {product.images && product.images.length > 0 ? (
-                            <Image
-                              src={product.images[0]}
-                              alt={product.title}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                              <Package className="h-20 w-20 text-gray-400" />
-                            </div>
-                          )}
-                        </motion.div>
-
-                        {/* Quick Add Button */}
-                        <motion.div
-                          initial={{ y: 100, opacity: 0 }}
-                          animate={{ 
-                            y: hoveredProduct === product._id ? 0 : 100, 
-                            opacity: hoveredProduct === product._id ? 1 : 0 
-                          }}
-                          className="absolute bottom-4 left-4 right-4"
-                        >
-                          <Button 
-                            className="w-full bg-black text-white hover:bg-maroon font-bold rounded-full"
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            <ShoppingBag className="mr-2 h-4 w-4" />
-                            Quick Add
-                          </Button>
-                        </motion.div>
-                      </div>
-
-                      <CardContent className="p-4 bg-white">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-bold text-sm line-clamp-1 text-gray-900 group-hover:text-maroon transition-colors">
-                            {product.title}
-                          </h3>
-                          {product.ratingAvg > 0 && (
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
-                              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                              {product.ratingAvg.toFixed(1)}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-baseline gap-2">
-                          {product.discountPrice && product.discountPrice < product.price ? (
-                            <>
-                              <span className="text-lg font-black text-gray-900">
-                                NPR {product.discountPrice.toFixed(0)}
-                              </span>
-                              <span className="text-sm text-gray-400 line-through">
-                                NPR {product.price.toFixed(0)}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-lg font-black text-gray-900">NPR {product.price.toFixed(0)}</span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-20 bg-gray-50 rounded-3xl"
-            >
-              <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No products available at the moment.</p>
-              <p className="text-gray-400 text-sm mt-2">Check back soon for amazing deals!</p>
-            </motion.div>
-          )}
+{/*  */}
         </div>
       </section>
 
-      {/* Categories Section - Interactive Pills */}
-      {categories.length > 0 && (
-        <section className="py-24 px-6 md:px-12 lg:px-20 bg-gray-50">
-          <div className="max-w-7xl mx-auto">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12"
-            >
-              <div>
-                <h2 className="text-4xl md:text-5xl font-black mb-4">
-                  Browse by <span className="text-maroon">Category</span>
-                </h2>
-                <p className="text-gray-500">Find exactly what you&apos;re looking for</p>
-              </div>
-              <Link href="/categories">
-                <Button variant="ghost" className="font-bold group">
-                  View All Categories 
-                  <ArrowUpRight className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </Button>
-              </Link>
-            </motion.div>
+      {/* Delivery Banner - Playful Design */}
+      <section className="py-24 px-6 md:px-12 lg:px-20 bg-black text-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-black mb-4">
+              Delivery That <span className="text-maroon">Delights</span>
+            </h2>
+            <p className="text-white/50 max-w-2xl mx-auto">
+              Choose how you want your order delivered. We&apos;ve got options for every lifestyle.
+            </p>
+          </motion.div>
 
-            {/* Category Pills */}
-            <motion.div 
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              variants={staggerContainer}
-              className="flex flex-wrap gap-3 mb-12"
-            >
-              {categories.map((category: Category, i: number) => (
-                <motion.div key={category._id} variants={scaleIn}>
-                  <Link href={`/categories/${category.slug}`}>
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className={`px-6 py-3 rounded-full font-bold text-sm transition-all cursor-pointer ${
-                        i === activeCategory
-                          ? 'bg-black text-white shadow-lg'
-                          : 'bg-white text-black border-2 border-black/10 hover:border-maroon hover:text-maroon'
-                      }`}
-                    >
-                      {category.name}
-                    </motion.div>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Featured Category Display */}
-            <AnimatePresence mode="wait">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Zap,
+                title: "Express Delivery",
+                description: "Get it within 2 hours in Kathmandu Valley",
+                tag: "Fastest"
+              },
+              {
+                icon: Truck,
+                title: "Standard Delivery",
+                description: "Free delivery on orders above NPR 2000",
+                tag: "Most Popular"
+              },
+              {
+                icon: Package,
+                title: "Pickup Points",
+                description: "Collect from 50+ locations nationwide",
+                tag: "Flexible"
+              }
+            ].map((option, i) => (
               <motion.div
-                key={activeCategory}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="relative bg-black rounded-3xl p-8 md:p-12 overflow-hidden min-h-[300px]"
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -8 }}
+                className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all"
               >
-                <div className="relative z-10">
-                  <Badge className="bg-maroon text-white mb-4">Featured</Badge>
-                  <h3 className="text-3xl md:text-4xl font-black text-white mb-4">
-                    {categories[activeCategory]?.name || "Category"}
-                  </h3>
-                  <p className="text-white/60 max-w-md mb-6">
-                    {categories[activeCategory]?.description || "Explore our curated collection"}
-                  </p>
-                  <Link href={`/categories/${categories[activeCategory]?.slug}`}>
-                    <Button className="bg-white text-black hover:bg-gray-100 font-bold rounded-full">
-                      Shop Now <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-                {/* Abstract shapes */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-maroon/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-20 w-32 h-32 bg-white/5 rounded-full" />
+                <Badge className="absolute top-4 right-4 bg-maroon text-white text-xs">
+                  {option.tag}
+                </Badge>
+                <motion.div 
+                  variants={floatAnimation}
+                  initial="initial"
+                  animate="animate"
+                  className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-6"
+                >
+                  <option.icon className="w-7 h-7 text-white" />
+                </motion.div>
+                <h3 className="text-xl font-bold mb-2">{option.title}</h3>
+                <p className="text-white/50 text-sm">{option.description}</p>
               </motion.div>
-            </AnimatePresence>
+            ))}
           </div>
-        </section>
-      )}
-
-
-
-      {/* Bottom Marquee */}
-      <section className="bg-maroon py-4 overflow-hidden">
-        <motion.div
-          animate={{ x: [0, -500] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="flex gap-8 whitespace-nowrap"
-        >
-          {[...Array(10)].map((_, i) => (
-            <span key={i} className="text-white font-bold text-sm flex items-center gap-4">
-              <Star className="w-4 h-4 fill-white" /> FREE SHIPPING ON ORDERS OVER NPR 2000
-              <Star className="w-4 h-4 fill-white" /> EASY RETURNS
-              <Star className="w-4 h-4 fill-white" /> 24/7 SUPPORT
-            </span>
-          ))}
-        </motion.div>
+        </div>
       </section>
 
+      {/* Newsletter / CTA Section */}
       <section className="py-24 px-6 md:px-12 lg:px-20 bg-gray-50">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
@@ -931,6 +815,23 @@ export default function Home() {
             </p>
           </motion.div>
         </div>
+      </section>
+
+      {/* Bottom Marquee */}
+      <section className="bg-maroon py-4 overflow-hidden">
+        <motion.div
+          animate={{ x: [0, -500] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="flex gap-8 whitespace-nowrap"
+        >
+          {[...Array(10)].map((_, i) => (
+            <span key={i} className="text-white font-bold text-sm flex items-center gap-4">
+              <Star className="w-4 h-4 fill-white" /> FREE SHIPPING ON ORDERS OVER NPR 2000
+              <Star className="w-4 h-4 fill-white" /> EASY RETURNS
+              <Star className="w-4 h-4 fill-white" /> 24/7 SUPPORT
+            </span>
+          ))}
+        </motion.div>
       </section>
     </main>
   );
