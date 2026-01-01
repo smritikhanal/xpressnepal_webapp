@@ -12,6 +12,9 @@ import {
   Heart,
   Menu
 } from 'lucide-react';
+import { useAuthStore } from '@/store/auth-store';
+import { useCartStore } from '@/store/cart-store';
+import { useWishlistStore } from '@/store/wishlist-store';
 import { NotificationBell } from '@/components/NotificationBell';
 import {
   DropdownMenu,
@@ -28,20 +31,13 @@ import { Category } from '@/types';
 
 export default function Navbar() {
   const router = useRouter();
-  // const { isAuthenticated, user, clearAuth } = useAuthStore();
-  // const { getItemCount, fetchCart, cart } = useCartStore();
-  // const { getItemCount: getWishlistCount } = useWishlistStore();
+  const { isAuthenticated, user, clearAuth } = useAuthStore();
+  const { getItemCount, fetchCart, cart } = useCartStore();
+  const { getItemCount: getWishlistCount } = useWishlistStore();
   const [categories, setCategories] = useState<Category[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const isAuthenticated = false; // Replace with actual auth state
-  const user = null;
-  const fetchCart = () => {}; // Replace with actual fetch cart function
-  const getItemCount = () => 0; // Replace with actual get item count function
-  const getWishlistCount = () => 0;
-  
 
   // Fetch cart on mount if authenticated
   useEffect(() => {
@@ -54,7 +50,7 @@ export default function Navbar() {
   useEffect(() => {
     setCartCount(getItemCount());
     setWishlistCount(getWishlistCount());
-  }, []);
+  }, [cart, getItemCount, getWishlistCount]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -160,6 +156,21 @@ export default function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href="/profile">My Profile</Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/orders">My Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/addresses">My Addresses</Link>
+                  </DropdownMenuItem>
+                  {user?.role === 'admin' && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin">Admin Dashboard</Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     Logout
                   </DropdownMenuItem>
@@ -179,6 +190,39 @@ export default function Navbar() {
                 </Link>
               </>
             )}
+
+            {/* Notifications - Only show if authenticated */}
+            {isAuthenticated && <NotificationBell />}
+
+            {/* Wishlist */}
+            <Link href="/wishlist">
+              <Button variant="ghost" size="icon" className="relative">
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-red-500"
+                  >
+                    {wishlistCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
+
+            {/* Cart */}
+            <Link href="/cart">
+              <Button variant="ghost" size="icon" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]"
+                  >
+                    {cartCount}
+                  </Badge>
+                )}
+              </Button>
+            </Link>
 
             {/* Mobile Menu */}
             <Sheet>
