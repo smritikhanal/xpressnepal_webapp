@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import * as z from "zod";
 import Link from "next/link";
+import { useAuthStore } from "@/store/auth-store";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -21,6 +22,7 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { setAuth } = useAuthStore();
 
   const {
     register,
@@ -29,12 +31,6 @@ export default function LoginForm() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
-
-  const setAuth = (user: any, token: string) => {
-    // Placeholder function to simulate setting auth state
-    console.log("User:", user);
-    console.log("Token:", token);
-  };
 
   const onSubmit = async (data: LoginFormData) => {
     try {

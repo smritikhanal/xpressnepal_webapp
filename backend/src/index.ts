@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import categoryRoutes from './routes/category.routes.js';
 import { ApiError } from './utils/apiHelpers.js';
 
 // Route imports
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // 404 Handler
 app.use((_req: Request, res: Response) => {

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+PROJECT_DOCUMENTATION.md
+project-docs.js
+sprint-1-video-script.md
+video-script.md
