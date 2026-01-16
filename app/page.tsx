@@ -17,25 +17,245 @@ import {
   ShoppingBag,
   ArrowUpRight,
   Clock,
-  Flame
+  Flame,
+  ShoppingCart,
+  Gift,
+  CreditCard,
+  Tag,
+  Percent,
+  Box,
+  PackageCheck,
+  Eye
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Product, Category } from "@/types";
 import { motion, useScroll, useTransform, useInView, AnimatePresence, Variants } from "framer-motion";
-import dynamic from "next/dynamic";
 
-// Dynamically import Spline to avoid SSR issues
-const Spline = dynamic(() => import('@splinetool/react-spline'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center bg-black">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin" />
-        <span className="text-white/60 text-sm font-medium">Loading 3D Experience...</span>
-      </div>
-    </div>
-  )
-});
+// Animated floating shopping elements for hero
+const FloatingElements = () => (
+  <div className="absolute inset-0 overflow-hidden">
+    {/* Animated gradient orbs */}
+    <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-maroon/30 to-pink-500/20 rounded-full blur-3xl animate-pulse" />
+    <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-500/20 to-maroon/30 rounded-full blur-3xl animate-pulse delay-1000" />
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-maroon/10 via-transparent to-purple-500/10 rounded-full blur-3xl" />
+    
+    {/* Large Shopping Bag - Top Right */}
+    <motion.div
+      className="absolute top-[10%] right-[10%] text-white/15"
+      animate={{ y: [-20, 20, -20], rotate: [-5, 5, -5] }}
+      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <ShoppingBag className="w-40 h-40" />
+    </motion.div>
+    
+    {/* Shopping Cart - Left Side */}
+    <motion.div
+      className="absolute top-[25%] left-[5%] text-white/12"
+      animate={{ y: [15, -15, 15], x: [-5, 10, -5] }}
+      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+    >
+      <ShoppingCart className="w-36 h-36" />
+    </motion.div>
+    
+    {/* Delivery Truck - Bottom Moving Across */}
+    <motion.div
+      className="absolute bottom-[15%] text-white/10"
+      animate={{ 
+        x: [-100, window?.innerWidth || 1400], 
+        y: [0, -10, 0, 10, 0]
+      }}
+      transition={{ 
+        x: { duration: 20, repeat: Infinity, ease: "linear" },
+        y: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+      }}
+    >
+      <Truck className="w-28 h-28" />
+    </motion.div>
+    
+    {/* Another Truck - Top Moving Opposite */}
+    <motion.div
+      className="absolute top-[20%] text-white/8"
+      animate={{ 
+        x: [window?.innerWidth || 1400, -100], 
+        y: [0, 5, 0, -5, 0]
+      }}
+      transition={{ 
+        x: { duration: 25, repeat: Infinity, ease: "linear", delay: 5 },
+        y: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+      }}
+    >
+      <Truck className="w-20 h-20" />
+    </motion.div>
+    
+    {/* Package Box - Center Left */}
+    <motion.div
+      className="absolute top-[45%] left-[15%] text-white/12"
+      animate={{ y: [20, -20, 20], rotate: [0, -10, 0] }}
+      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+    >
+      <Package className="w-28 h-28" />
+    </motion.div>
+    
+    {/* Box - Right Side */}
+    <motion.div
+      className="absolute top-[55%] right-[8%] text-white/10"
+      animate={{ y: [-15, 15, -15], rotate: [5, -5, 5] }}
+      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+    >
+      <Box className="w-24 h-24" />
+    </motion.div>
+    
+    {/* Gift Box - Top Center */}
+    <motion.div
+      className="absolute top-[8%] left-[40%] text-white/10"
+      animate={{ y: [-10, 15, -10], scale: [1, 1.1, 1] }}
+      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
+    >
+      <Gift className="w-20 h-20" />
+    </motion.div>
+    
+    {/* Shopping Bag - Bottom Left */}
+    <motion.div
+      className="absolute bottom-[30%] left-[25%] text-white/10"
+      animate={{ y: [10, -20, 10], x: [5, -5, 5] }}
+      transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+    >
+      <ShoppingBag className="w-24 h-24" />
+    </motion.div>
+    
+    {/* Cart - Right Center */}
+    <motion.div
+      className="absolute top-[40%] right-[25%] text-white/8"
+      animate={{ y: [-12, 12, -12], rotate: [0, 5, 0] }}
+      transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+    >
+      <ShoppingCart className="w-20 h-20" />
+    </motion.div>
+    
+    {/* Credit Card - Floating */}
+    <motion.div
+      className="absolute bottom-[45%] right-[15%] text-white/10"
+      animate={{ y: [15, -15, 15], rotate: [-10, 10, -10] }}
+      transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 2.5 }}
+    >
+      <CreditCard className="w-18 h-18" />
+    </motion.div>
+    
+    {/* Tag/Label - Top Left */}
+    <motion.div
+      className="absolute top-[30%] left-[35%] text-white/8"
+      animate={{ y: [-8, 8, -8], rotate: [0, 15, 0] }}
+      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+    >
+      <Tag className="w-16 h-16" />
+    </motion.div>
+    
+    {/* Percent/Discount - Bottom Right */}
+    <motion.div
+      className="absolute bottom-[20%] right-[30%] text-white/10"
+      animate={{ scale: [1, 1.2, 1], rotate: [0, 360] }}
+      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <Percent className="w-16 h-16" />
+    </motion.div>
+    
+    {/* Package Check - Delivered */}
+    <motion.div
+      className="absolute top-[65%] left-[8%] text-white/8"
+      animate={{ y: [-10, 10, -10], x: [-5, 5, -5] }}
+      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+    >
+      <PackageCheck className="w-22 h-22" />
+    </motion.div>
+    
+    {/* Sparkles - Decorative */}
+    <motion.div
+      className="absolute top-[75%] right-[40%] text-white/15"
+      animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.2, 0.1] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <Sparkles className="w-14 h-14" />
+    </motion.div>
+    
+    {/* Star - Rating */}
+    <motion.div
+      className="absolute bottom-[40%] left-[45%] text-white/10"
+      animate={{ rotate: [0, 360], scale: [1, 1.1, 1] }}
+      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+    >
+      <Star className="w-12 h-12" />
+    </motion.div>
+    
+    {/* Heart - Wishlist */}
+    <motion.div
+      className="absolute top-[50%] right-[5%] text-white/10"
+      animate={{ scale: [1, 1.2, 1] }}
+      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <Heart className="w-16 h-16" />
+    </motion.div>
+    
+    {/* Small floating bags scattered */}
+    <motion.div
+      className="absolute top-[80%] left-[60%] text-white/6"
+      animate={{ y: [-5, 5, -5] }}
+      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <ShoppingBag className="w-12 h-12" />
+    </motion.div>
+    
+    <motion.div
+      className="absolute top-[15%] left-[55%] text-white/6"
+      animate={{ y: [5, -5, 5] }}
+      transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+    >
+      <ShoppingCart className="w-10 h-10" />
+    </motion.div>
+
+    {/* Grid pattern overlay */}
+    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:80px_80px]" />
+    
+    {/* Animated delivery path lines */}
+    <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+      <motion.path
+        d="M0,50% Q25%,30% 50%,50% T100%,50%"
+        stroke="url(#gradient1)" 
+        strokeWidth="2"
+        fill="none"
+        strokeDasharray="10 5"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 0.2 }}
+        transition={{ duration: 4, repeat: Infinity, repeatType: "reverse" }}
+      />
+      <motion.line
+        x1="0%" y1="30%" x2="100%" y2="70%"
+        stroke="url(#gradient1)" strokeWidth="1"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 0.3 }}
+        transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+      />
+      <motion.line
+        x1="100%" y1="20%" x2="0%" y2="80%"
+        stroke="url(#gradient2)" strokeWidth="1"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 0.2 }}
+        transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", delay: 1 }}
+      />
+      <defs>
+        <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#800020" stopOpacity="0" />
+          <stop offset="50%" stopColor="#800020" stopOpacity="1" />
+          <stop offset="100%" stopColor="#800020" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+);
 
 // Playful floating animation variants
 const floatAnimation: Variants = {
@@ -215,24 +435,6 @@ export default function Home() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
-        {
-          _id: "p5",
-          title: "Sample Product 5",
-          slug: "sample-product-5",
-          description: "Limited edition.",
-          price: 180,
-          images: [
-            "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
-          ],
-          category: "Sports",
-          categoryId: "5",
-          stock: 200,
-          ratingAvg: 4.7,
-          ratingCount: 20,
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
       ];
       const fallbackCategories = [
         {
@@ -352,20 +554,17 @@ export default function Home() {
     <main className="bg-white text-black overflow-hidden">
       <BlobCursor />
       
-      {/* Hero Section with Spline */}
+      {/* Hero Section with Animated Background */}
       <motion.section 
         ref={heroRef}
         style={{ opacity: heroOpacity, scale: heroScale }}
         className="relative min-h-screen bg-black overflow-hidden"
       >
-        {/* Spline 3D Background */}
+        {/* Animated E-commerce Background */}
         <div className="absolute inset-0 z-0">
-          <Spline 
-            scene="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"
-            className="w-full h-full"
-          />
+          <FloatingElements />
           {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
         </div>
 
         {/* Hero Content */}
@@ -709,7 +908,109 @@ export default function Home() {
               </Button>
             </Link>
           </motion.div>
-{/*  */}
+
+          {/* Product Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-8">
+            {products.map((product, index) => (
+              <motion.div
+                key={product._id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+                className="group flex flex-col h-full"
+              >
+                {/* Product Image Container */}
+                <div className="relative overflow-hidden flex items-center justify-center rounded-2xl bg-[#F6F7FB] dark:bg-gray-800 h-[270px] mb-4 border border-gray-100 dark:border-gray-700">
+                  <Link href={`/products/${product.slug}`} className="flex items-center justify-center w-full h-full">
+                    <Image
+                      src={product.images[0] || '/placeholder.png'}
+                      alt={product.title}
+                      width={250}
+                      height={250}
+                      className="object-contain p-4 max-h-[230px] w-auto transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </Link>
+                  
+                  {/* Hover Action Buttons */}
+                  <div className="absolute left-0 bottom-0 translate-y-full w-full flex items-center justify-center gap-2.5 pb-5 transition-transform duration-300 ease-out group-hover:translate-y-0">
+                    {/* Quick View Button */}
+                    <button 
+                      aria-label="Quick view"
+                      className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-maroon dark:hover:text-maroon transition-colors duration-200"
+                    >
+                      <Eye className="w-5 h-5" />
+                    </button>
+                    
+                    {/* Add to Cart Button */}
+                    <button className="inline-flex items-center font-medium text-sm py-2.5 px-5 rounded-full bg-maroon text-white hover:bg-maroon/90 transition-colors duration-200 shadow-lg">
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      Add to cart
+                    </button>
+                    
+                    {/* Favorite Button */}
+                    <button 
+                      aria-label="Add to wishlist"
+                      className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-pink-500 transition-colors duration-200"
+                    >
+                      <Heart className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Discount Badge */}
+                  {product.price < 1000 && (
+                    <Badge className="absolute top-3 left-3 bg-green-500 text-white text-xs px-2 py-1">
+                      Sale
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Product Info - Flex grow to push price to bottom */}
+                <div className="flex flex-col flex-grow">
+                  <h3 className="font-medium text-gray-900 dark:text-white hover:text-maroon dark:hover:text-maroon transition-colors duration-200 mb-1.5 line-clamp-2 min-h-[48px]">
+                    <Link href={`/products/${product.slug}`}>
+                      {product.title}
+                    </Link>
+                  </h3>
+                  
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={`w-4 h-4 ${
+                          i < Math.floor(product.ratingAvg || 0) 
+                            ? 'text-amber-400 fill-amber-400' 
+                            : 'text-gray-300'
+                        }`} 
+                      />
+                    ))}
+                    <span className="text-xs text-gray-500 ml-1">({product.ratingCount || 0})</span>
+                  </div>
+                  
+                  {/* Price - Always at bottom */}
+                  <div className="flex items-center gap-2 mt-auto">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                      Rs. {product.price.toLocaleString()}
+                    </span>
+                    <span className="text-sm line-through text-gray-400">
+                      Rs. {Math.round(product.price * 1.15).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* View More Button - Mobile */}
+          <div className="mt-10 text-center md:hidden">
+            <Link href="/products">
+              <Button className="bg-black text-white hover:bg-maroon rounded-full px-8">
+                View All Products
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
