@@ -1,45 +1,54 @@
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, Package, Truck, Gift, CreditCard, Tag, Heart, Star, Box } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import LoginForm from '../_components/login-form';
 
+// Floating e-commerce icons configuration
+const floatingIcons = [
+  { Icon: ShoppingCart, left: '5%', top: '15%', size: 'w-12 h-12', delay: 0, duration: 6 },
+  { Icon: ShoppingBag, left: '85%', top: '10%', size: 'w-14 h-14', delay: 1, duration: 7 },
+  { Icon: Truck, left: '10%', top: '75%', size: 'w-16 h-16', delay: 0.5, duration: 8 },
+  { Icon: Package, left: '80%', top: '70%', size: 'w-10 h-10', delay: 2, duration: 5 },
+  { Icon: Gift, left: '15%', top: '45%', size: 'w-8 h-8', delay: 1.5, duration: 6 },
+  { Icon: CreditCard, left: '90%', top: '40%', size: 'w-10 h-10', delay: 0.8, duration: 7 },
+  { Icon: Tag, left: '75%', top: '85%', size: 'w-8 h-8', delay: 2.5, duration: 5 },
+  { Icon: Heart, left: '5%', top: '85%', size: 'w-10 h-10', delay: 1.2, duration: 6 },
+  { Icon: Star, left: '92%', top: '25%', size: 'w-8 h-8', delay: 0.3, duration: 8 },
+  { Icon: Box, left: '3%', top: '30%', size: 'w-10 h-10', delay: 1.8, duration: 7 },
+  { Icon: ShoppingBag, left: '70%', top: '5%', size: 'w-8 h-8', delay: 2.2, duration: 6 },
+  { Icon: ShoppingCart, left: '25%', top: '90%', size: 'w-10 h-10', delay: 0.7, duration: 7 },
+];
+
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-orange-50 via-amber-50 to-white flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Particles */}
-      {Array.from({ length: 8 }, (_, i) => ({
-        id: i,
-        width: 60 + (i * 13) % 80,
-        height: 60 + (i * 17) % 80,
-        left: (i * 47) % 100,
-        top: (i * 31) % 100,
-        yOffset: -30 + (i * 19) % 60,
-        xOffset: -30 + (i * 23) % 60,
-        duration: 12 + (i * 5) % 8,
-      })).map((p) => (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Floating E-commerce Icons */}
+      {floatingIcons.map((item, index) => (
         <motion.div
-          key={p.id}
-          className="absolute rounded-full bg-primary/5"
-          style={{
-            width: p.width,
-            height: p.height,
-            left: `${p.left}%`,
-            top: `${p.top}%`,
-          }}
+          key={index}
+          className={`absolute ${item.size} text-primary/10`}
+          style={{ left: item.left, top: item.top }}
           animate={{
-            y: [0, p.yOffset],
-            x: [0, p.xOffset],
-            scale: [1, 1.1, 1],
+            y: [-15, 15, -15],
+            x: [-10, 10, -10],
+            rotate: [-5, 5, -5],
           }}
           transition={{
-            duration: p.duration,
+            duration: item.duration,
+            delay: item.delay,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-        />
+        >
+          <item.Icon className="w-full h-full" />
+        </motion.div>
       ))}
+
+      {/* Gradient Orbs */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-primary/10 to-orange-300/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-r from-amber-200/20 to-primary/10 rounded-full blur-3xl" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
