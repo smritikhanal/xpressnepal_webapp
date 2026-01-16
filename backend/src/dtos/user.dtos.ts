@@ -10,14 +10,7 @@ export const CreateUserDTO = z.object({
     phone: z.string().optional(),
     shopName: z.string().min(3).optional(),
     businessDescription: z.string().max(500).optional(),
-    confirmPassword: z.string().min(6)
-}).refine(
-    (data) => data.password === data.confirmPassword,
-    {
-        message: "Passwords do not match",
-        path: ["confirmPassword"]
-    }
-)
+})
 export type CreateUserDTO = z.infer<typeof CreateUserDTO>;
 
 export const LoginUserDTO = z.object({
