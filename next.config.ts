@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'cdn-1.azazie.com',
+      },
+      {
+        protocol: 'https',
         hostname: '**.gadgetbytenepal.com',
       },
       {

@@ -1,120 +1,54 @@
 'use client';
-
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ShoppingBag, ShoppingCart, Package, Truck, Gift, CreditCard, Tag, Heart, Star, Box } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Lock, ShoppingBag, AlertCircle } from 'lucide-react';
-// import { useAuthStore } from '@/store/auth-store';
+import LoginForm from '../_components/login-form';
 
-const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+// Floating e-commerce icons configuration
+const floatingIcons = [
+  { Icon: ShoppingCart, left: '5%', top: '15%', size: 'w-12 h-12', delay: 0, duration: 6 },
+  { Icon: ShoppingBag, left: '85%', top: '10%', size: 'w-14 h-14', delay: 1, duration: 7 },
+  { Icon: Truck, left: '10%', top: '75%', size: 'w-16 h-16', delay: 0.5, duration: 8 },
+  { Icon: Package, left: '80%', top: '70%', size: 'w-10 h-10', delay: 2, duration: 5 },
+  { Icon: Gift, left: '15%', top: '45%', size: 'w-8 h-8', delay: 1.5, duration: 6 },
+  { Icon: CreditCard, left: '90%', top: '40%', size: 'w-10 h-10', delay: 0.8, duration: 7 },
+  { Icon: Tag, left: '75%', top: '85%', size: 'w-8 h-8', delay: 2.5, duration: 5 },
+  { Icon: Heart, left: '5%', top: '85%', size: 'w-10 h-10', delay: 1.2, duration: 6 },
+  { Icon: Star, left: '92%', top: '25%', size: 'w-8 h-8', delay: 0.3, duration: 8 },
+  { Icon: Box, left: '3%', top: '30%', size: 'w-10 h-10', delay: 1.8, duration: 7 },
+  { Icon: ShoppingBag, left: '70%', top: '5%', size: 'w-8 h-8', delay: 2.2, duration: 6 },
+  { Icon: ShoppingCart, left: '25%', top: '90%', size: 'w-10 h-10', delay: 0.7, duration: 7 },
+];
 
 export default function LoginPage() {
-  const router = useRouter();
-  // const { setAuth } = useAuthStore();
-
-  const setAuth = (user: any, token: string) => {
-    // Placeholder function to simulate setting auth state
-    console.log('User:', user);
-    console.log('Token:', token);
-  }
-
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-  });
-
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Login failed');
-      }
-
-      // Store auth data
-      setAuth(result.data.user, result.data.token);
-
-      // Redirect based on role
-      if (result.data.user.role === 'superadmin') {
-        router.push('/admin/dashboard');
-      } else if (result.data.user.role === 'seller') {
-        router.push('/seller/dashboard');
-      } else {
-        router.push('/');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Particles */}
-      {Array.from({ length: 8 }, (_, i) => ({
-        id: i,
-        width: 60 + (i * 13) % 80,
-        height: 60 + (i * 17) % 80,
-        left: (i * 47) % 100,
-        top: (i * 31) % 100,
-        yOffset: -30 + (i * 19) % 60,
-        xOffset: -30 + (i * 23) % 60,
-        duration: 12 + (i * 5) % 8,
-      })).map((p) => (
+      {/* Floating E-commerce Icons */}
+      {floatingIcons.map((item, index) => (
         <motion.div
-          key={p.id}
-          className="absolute rounded-full bg-primary/5"
-          style={{
-            width: p.width,
-            height: p.height,
-            left: `${p.left}%`,
-            top: `${p.top}%`,
-          }}
+          key={index}
+          className={`absolute ${item.size} text-primary/10`}
+          style={{ left: item.left, top: item.top }}
           animate={{
-            y: [0, p.yOffset],
-            x: [0, p.xOffset],
-            scale: [1, 1.1, 1],
+            y: [-15, 15, -15],
+            x: [-10, 10, -10],
+            rotate: [-5, 5, -5],
           }}
           transition={{
-            duration: p.duration,
+            duration: item.duration,
+            delay: item.delay,
             repeat: Infinity,
             ease: "easeInOut",
           }}
-        />
+        >
+          <item.Icon className="w-full h-full" />
+        </motion.div>
       ))}
+
+      {/* Gradient Orbs */}
+      <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-primary/10 to-orange-300/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-10 w-72 h-72 bg-gradient-to-r from-amber-200/20 to-primary/10 rounded-full blur-3xl" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -127,11 +61,11 @@ export default function LoginPage() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
-              className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary to-orange-600 flex items-center justify-center"
+              className="mx-auto w-16 h-16 rounded-full bg-linear-to-br from-primary to-orange-600 flex items-center justify-center"
             >
               <ShoppingBag className="h-8 w-8 text-white" />
             </motion.div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold bg-linear-to-r from-primary to-orange-600 bg-clip-text text-transparent">
               Welcome Back
             </CardTitle>
             <CardDescription className="text-base">
@@ -139,75 +73,9 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    className="pl-10 h-12 border-2 focus-visible:ring-primary"
-                    {...register('email')}
-                  />
-                </div>
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email.message}</p>
-                )}
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Forgot?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    className="pl-10 h-12 border-2 focus-visible:ring-primary"
-                    {...register('password')}
-                  />
-                </div>
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password.message}</p>
-                )}
-              </div>
-
-              {/* Error Alert */}
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full h-12 text-base bg-gradient-to-r from-primary to-orange-600 hover:from-primary/90 hover:to-orange-700"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign In'
-                )}
-              </Button>
-            </form>
+            
+            {/* Login Form */}
+            <LoginForm />
 
             {/* Divider */}
             <div className="relative my-6">
