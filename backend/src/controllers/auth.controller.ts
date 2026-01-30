@@ -40,7 +40,7 @@ export const register = async (
       authProvider: 'local',
       isVerified: false,
     };
-    
+
     if (phone) userData.phone = phone;
     if (role === 'seller') {
       if (shopName) userData.shopName = shopName;
@@ -50,7 +50,7 @@ export const register = async (
 
     // Create user - handle the return type properly
     const createdUser = await User.create(userData);
-    
+
     // Check if createdUser is an array (shouldn't be, but TypeScript thinks it might be)
     let user;
     if (Array.isArray(createdUser)) {
@@ -79,7 +79,7 @@ export const register = async (
       userResponse.businessDescription = user.businessDescription;
       userResponse.isSellerActive = user.isSellerActive;
     }
-    
+
     return res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -130,6 +130,7 @@ export const login = async (
         success: false,
         message: `Please login using ${user.authProvider}`,
       });
+      
     }
 
     const isMatch = await comparePassword(password, user.passwordHash);
@@ -167,6 +168,7 @@ export const login = async (
     });
   } catch (error) {
     console.error('Login error:', error);
+    
     return res.status(500).json({
       success: false,
       message: 'Server error during login',
@@ -254,6 +256,13 @@ export const updateProfile = async (
         user.businessDescription = businessDescription;
     }
 
+    if (req.file) {
+      // Normalize path separator to forward slash for URL compatibility
+      const imagePath = `uploads/${req.file.filename}`;
+      user.image = imagePath;
+      console.log('User image updated:', imagePath);
+    }
+
     await user.save();
 
     const userResponse: any = {
@@ -264,6 +273,7 @@ export const updateProfile = async (
       phone: user.phone,
       isVerified: user.isVerified,
       authProvider: user.authProvider,
+      image: user.image,
       createdAt: user.createdAt,
     };
 

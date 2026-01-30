@@ -16,13 +16,13 @@ export interface ApiResponse<T = any> {
 export interface PaginatedResponse<T> {
   success: boolean;
   data: {
-    [key: string]: T[];
     pagination: {
       page: number;
       limit: number;
       total: number;
       pages: number;
     };
+    [key: string]: any;
   };
 }
 
@@ -34,10 +34,10 @@ export const apiClient = {
   auth: {
     register: (data: { name: string; email: string; password: string; phone?: string }) =>
       axiosInstance.post<ApiResponse>('/api/auth/register', data),
-    
+
     login: (data: { email: string; password: string }) =>
       axiosInstance.post<ApiResponse>('/api/auth/login', data),
-    
+
     getMe: () =>
       axiosInstance.get<ApiResponse>('/api/auth/me'),
   },
@@ -55,16 +55,16 @@ export const apiClient = {
       sort?: string;
     }) =>
       axiosInstance.get<PaginatedResponse<any>>('/api/products', { params }),
-    
+
     getBySlug: (slug: string) =>
       axiosInstance.get<ApiResponse>(`/api/products/${slug}`),
-    
+
     create: (data: any) =>
       axiosInstance.post<ApiResponse>('/api/products', data),
-    
+
     update: (id: string, data: any) =>
       axiosInstance.put<ApiResponse>(`/api/products/id/${id}`, data),
-    
+
     delete: (id: string) =>
       axiosInstance.delete<ApiResponse>(`/api/products/id/${id}`),
   },
@@ -73,16 +73,16 @@ export const apiClient = {
   categories: {
     getAll: (params?: { page?: number; limit?: number }) =>
       axiosInstance.get<PaginatedResponse<any>>('/api/categories', { params }),
-    
+
     getBySlug: (slug: string) =>
       axiosInstance.get<ApiResponse>(`/api/categories/${slug}`),
-    
+
     create: (data: any) =>
       axiosInstance.post<ApiResponse>('/api/categories', data),
-    
+
     update: (id: string, data: any) =>
       axiosInstance.put<ApiResponse>(`/api/categories/id/${id}`, data),
-    
+
     delete: (id: string) =>
       axiosInstance.delete<ApiResponse>(`/api/categories/id/${id}`),
   },
@@ -91,16 +91,16 @@ export const apiClient = {
   cart: {
     get: () =>
       axiosInstance.get<ApiResponse>('/api/cart'),
-    
+
     add: (data: { productId: string; quantity: number }) =>
       axiosInstance.post<ApiResponse>('/api/cart/add', data),
-    
+
     update: (data: { productId: string; quantity: number }) =>
       axiosInstance.put<ApiResponse>('/api/cart/update', data),
-    
+
     remove: (productId: string) =>
       axiosInstance.delete<ApiResponse>(`/api/cart/remove/${productId}`),
-    
+
     clear: () =>
       axiosInstance.delete<ApiResponse>('/api/cart/clear'),
   },
@@ -109,16 +109,16 @@ export const apiClient = {
   orders: {
     create: (data: { shippingAddressId: string; paymentMethod: string; notes?: string }) =>
       axiosInstance.post<ApiResponse>('/api/orders', data),
-    
+
     getMyOrders: () =>
       axiosInstance.get<ApiResponse>('/api/orders'),
-    
+
     getById: (id: string) =>
       axiosInstance.get<ApiResponse>(`/api/orders/${id}`),
-    
+
     updateStatus: (id: string, status: string) =>
       axiosInstance.put<ApiResponse>(`/api/orders/${id}/status`, { status }),
-    
+
     getAll: () =>
       axiosInstance.get<ApiResponse>('/api/orders/admin/all'),
   },
@@ -127,13 +127,13 @@ export const apiClient = {
   addresses: {
     getAll: () =>
       axiosInstance.get<ApiResponse>('/api/addresses'),
-    
+
     add: (data: any) =>
       axiosInstance.post<ApiResponse>('/api/addresses', data),
-    
+
     update: (id: string, data: any) =>
       axiosInstance.put<ApiResponse>(`/api/addresses/${id}`, data),
-    
+
     delete: (id: string) =>
       axiosInstance.delete<ApiResponse>(`/api/addresses/${id}`),
   },
@@ -142,10 +142,10 @@ export const apiClient = {
   reviews: {
     getProductReviews: (productId: string) =>
       axiosInstance.get<ApiResponse>(`/api/reviews/${productId}`),
-    
+
     create: (data: { productId: string; rating: number; comment: string }) =>
       axiosInstance.post<ApiResponse>('/api/reviews', data),
-    
+
     delete: (id: string) =>
       axiosInstance.delete<ApiResponse>(`/api/reviews/${id}`),
   },
@@ -154,13 +154,43 @@ export const apiClient = {
   wishlist: {
     get: () =>
       axiosInstance.get<ApiResponse>('/api/wishlist'),
-    
+
     add: (productId: string) =>
       axiosInstance.post<ApiResponse>('/api/wishlist/add', { productId }),
-    
+
     remove: (productId: string) =>
       axiosInstance.delete<ApiResponse>(`/api/wishlist/remove/${productId}`),
   },
+
+  // Admin User endpoints
+  adminUsers: {
+    getAll: () =>
+      axiosInstance.get<ApiResponse>('/api/admin/users'),
+
+    getById: (id: string) =>
+      axiosInstance.get<ApiResponse>(`/api/admin/users/${id}`),
+
+    create: (data: FormData) =>
+      axiosInstance.post<ApiResponse>('/api/admin/users', data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+
+    update: (id: string, data: FormData) =>
+      axiosInstance.put<ApiResponse>(`/api/admin/users/${id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+
+    delete: (id: string) =>
+      axiosInstance.delete<ApiResponse>(`/api/admin/users/${id}`),
+  },
+
+  // User Profile endpoints
+  user: {
+    updateProfile: (id: string, data: FormData) =>
+      axiosInstance.put<ApiResponse>(`/api/auth/${id}`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+  }
 };
 
 export default apiClient;
