@@ -17,6 +17,7 @@ export interface IUser extends Document {
   phone?: string;
   isVerified: boolean;
   authProvider: 'local' | 'google' | 'github';
+  image?: string; // URL path to user image
   // Seller-specific fields
   shopName?: string;
   businessDescription?: string;
@@ -105,6 +106,10 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ['local', 'google', 'github'],
       default: 'local',
+    },
+    image: {
+      type: String,
+      default: '',
     },
   },
   {
