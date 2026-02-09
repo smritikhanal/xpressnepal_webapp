@@ -26,14 +26,21 @@ interface User {
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [limit] = useState(5);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalUsers, setTotalUsers] = useState(0);
     const router = useRouter();
 
     useEffect(() => {
         const fetchUsers = async () => {
+            setLoading(true);
             try {
-                const response = await apiClient.adminUsers.getAll();
+                const response = await apiClient.adminUsers.getAll({ page, limit });
                 if (response.data.success) {
                     setUsers(response.data.data);
+                    setTotalPages(response.data.pages || 1);
+                    setTotalUsers(response.data.total || 0);
                 }
             } catch (error) {
                 console.error('Failed to fetch users:', error);
@@ -41,9 +48,8 @@ export default function AdminUsersPage() {
                 setLoading(false);
             }
         };
-
         fetchUsers();
-    }, []);
+    }, [page, limit]);
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this user?')) return;
@@ -54,6 +60,13 @@ export default function AdminUsersPage() {
             alert('Failed to delete user');
         }
     }
+
+    const handlePrev = () => {
+        if (page > 1) setPage(page - 1);
+    };
+    const handleNext = () => {
+        if (page < totalPages) setPage(page + 1);
+    };
 
     return (
         <div className="space-y-6">
@@ -114,7 +127,15 @@ export default function AdminUsersPage() {
                         )}
                     </TableBody>
                 </Table>
+                {/* Pagination Controls */}
+                <div className="flex justify-between items-center p-4">
+                    <span>Page {page} of {totalPages} | Total Users: {totalUsers}</span>
+                    <div className="space-x-2">
+                        <Button variant="outline" onClick={handlePrev} disabled={page === 1}>&lt;</Button>
+                        <Button variant="outline" onClick={handleNext} disabled={page === totalPages}>&gt;</Button>
+                    </div>
+                </div>
             </div>
-        </div>
+           </div> 
     );
 }
