@@ -11,6 +11,7 @@ import * as z from "zod";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
 import { handleLogin } from "@/lib/actions/auth-action";
+import toast from "react-hot-toast";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -40,6 +41,7 @@ export default function LoginForm() {
         const response = await handleLogin(values);
         if (response.success) {
           setAuth(response.data.user, response.data.token);
+          toast.success(`Welcome back, ${response.data.user.name}!`);
           if (response.data.user.role === "superadmin") {
             return router.replace("/admin/dashboard");
           } else if (response.data.user.role === "seller") {
@@ -49,9 +51,12 @@ export default function LoginForm() {
           }
         } else {
             setError(response.message);
+            toast.error(response.message);
         }
       } catch (err: any) {
-        setError(err.message || "Login failed");
+        const errorMsg = err.message || "Login failed";
+        setError(errorMsg);
+        toast.error(errorMsg);
       }
     });
   };

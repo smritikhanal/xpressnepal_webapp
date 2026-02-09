@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import * as z from 'zod';
 import { useForm } from 'react-hook-form';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAuthStore } from "@/store/auth-store";
+import { handleRegister } from "@/lib/actions/auth-action";
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
@@ -37,9 +39,10 @@ const registerSchema = z.object({
 export default function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const [accountType, setAccountType] = useState<'customer' | 'seller'>('customer');
+  const { setAuth } = useAuthStore();
 
   const {
     register,
@@ -64,54 +67,38 @@ export default function RegisterForm() {
     }
   }, [searchParams, setValue]);
 
-  const setAuth = (user: any, token: string) => {
-    // Placeholder function to simulate setting auth state
-    console.log('User:', user);
-    console.log('Token:', token);
-  };
-
-  const onSubmit = async (data: RegisterFormData) => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          password: data.password,
-          role: data.role,
-          ...(data.role === 'seller' && {
-            shopName: data.shopName,
-            businessDescription: data.businessDescription,
+  const onSubmit = async (values: RegisterFormData) => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const payload = {
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          password: values.password,
+          role: values.role,
+          ...(values.role === 'seller' && {
+            shopName: values.shopName,
+            businessDescription: values.businessDescription,
           }),
-        }),
-      });
+        };
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Registration failed');
+        const response = await handleRegister(payload);
+        
+        if (response.success) {
+          setAuth(response.data.user, response.data.token);
+          if (response.data.user.role === 'seller') {
+            return router.replace('/seller/dashboard');
+          } else {
+            return router.replace('/');
+          }
+        } else {
+             setError(response.message);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Registration failed');
       }
-
-      setAuth(result.data.user, result.data.token);
-
-      if (result.data.user.role === 'seller') {
-        router.push('/seller/dashboard');
-      } else {
-        router.push('/');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -126,6 +113,7 @@ export default function RegisterForm() {
                     setAccountType(value as 'customer' | 'seller');
                   }}
                   className="grid grid-cols-2 gap-4"
+                  disabled={isPending}
                 >
                   <div>
                     <RadioGroupItem
@@ -174,6 +162,7 @@ export default function RegisterForm() {
                     placeholder="John Doe"
                     className="pl-10 h-12 border-2 focus-visible:ring-primary"
                     {...register('name')}
+                    disabled={isPending}
                   />
                 </div>
                 {errors.name && (
@@ -193,6 +182,7 @@ export default function RegisterForm() {
                       placeholder="you@example.com"
                       className="pl-10 h-12 border-2 focus-visible:ring-primary"
                       {...register('email')}
+                      disabled={isPending}
                     />
                   </div>
                   {errors.email && (
@@ -211,6 +201,7 @@ export default function RegisterForm() {
                       placeholder="9812345678"
                       className="pl-10 h-12 border-2 focus-visible:ring-primary"
                       {...register('phone')}
+                      disabled={isPending}
                     />
                   </div>
                   {errors.phone && (
@@ -231,6 +222,7 @@ export default function RegisterForm() {
                         placeholder="My Awesome Shop"
                         className="pl-10 h-12 border-2 focus-visible:ring-primary"
                         {...register('shopName')}
+                        disabled={isPending}
                       />
                     </div>
                     {errors.shopName && (
@@ -245,6 +237,7 @@ export default function RegisterForm() {
                       placeholder="Describe what you sell..."
                       className="h-12 border-2 focus-visible:ring-primary"
                       {...register('businessDescription')}
+                      disabled={isPending}
                     />
                   </div>
                 </>
@@ -262,6 +255,7 @@ export default function RegisterForm() {
                       placeholder="••••••••"
                       className="pl-10 h-12 border-2 focus-visible:ring-primary"
                       {...register('password')}
+                      disabled={isPending}
                     />
                   </div>
                   {errors.password && (
@@ -280,6 +274,7 @@ export default function RegisterForm() {
                       placeholder="••••••••"
                       className="pl-10 h-12 border-2 focus-visible:ring-primary"
                       {...register('confirmPassword')}
+                      disabled={isPending}
                     />
                   </div>
                   {errors.confirmPassword && (
@@ -300,9 +295,9 @@ export default function RegisterForm() {
               <Button
                 type="submit"
                 className="w-full h-12 text-base bg-gradient-to-r from-primary to-orange-600 hover:from-primary/90 hover:to-orange-700"
-                disabled={loading}
+                disabled={isPending}
               >
-                {loading ? (
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Creating account...
