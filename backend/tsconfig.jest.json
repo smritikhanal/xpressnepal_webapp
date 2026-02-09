@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Override module settings for Jest (CommonJS)
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    
+    // Remove types that might conflict
+    "types": ["node", "jest"],
+    
+    // Ensure imports work correctly in tests
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    
+    // Keep isolated modules for ts-jest
+    "isolatedModules": true,
+    
+    // Source maps for debugging
+    "sourceMap": true,
+    "inlineSourceMap": false
+  },
+  "include": [
+    "src/**/*",
+    "src/__tests__/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
