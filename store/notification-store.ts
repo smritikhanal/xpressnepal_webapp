@@ -53,16 +53,16 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
       if (data.success) {
         set({
-          notifications: data.data.notifications,
-          unreadCount: data.data.unreadCount,
+          notifications: data.data || [],
+          unreadCount: data.unreadCount || 0,
           isLoading: false,
         });
       } else {
-        set({ isLoading: false });
+        set({ notifications: [], unreadCount: 0, isLoading: false });
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
-      set({ isLoading: false });
+      set({ notifications: [], unreadCount: 0, isLoading: false });
     }
   },
 
