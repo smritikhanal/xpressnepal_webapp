@@ -63,7 +63,7 @@ export default function SellerDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) {
+    if (user?._id) {
       fetchDashboardData();
     }
   }, [user]);
@@ -73,7 +73,7 @@ export default function SellerDashboardPage() {
       const token = localStorage.getItem('token');
       
       // Fetch seller's products
-      const productsRes = await fetch(`http://localhost:5000/api/products?sellerId=${user?.id}`, {
+      const productsRes = await fetch(`http://localhost:5000/api/products?sellerId=${user?._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const productsData = await productsRes.json();
