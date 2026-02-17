@@ -9,10 +9,23 @@ import bcrypt from 'bcrypt';
  */
 export const getUsers = async (req: Request, res: Response) => {
     try {
-        const users = await User.find().select('-passwordHash');
+        // Pagination params
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+
+        const total = await User.countDocuments();
+        const users = await User.find()
+            .select('-passwordHash')
+            .skip(skip)
+            .limit(limit);
+
         res.status(200).json({
             success: true,
             count: users.length,
+            total,
+            page,
+            pages: Math.ceil(total / limit),
             data: users,
         });
     } catch (error) {

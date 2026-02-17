@@ -22,6 +22,9 @@ export interface IUser extends Document {
   shopName?: string;
   businessDescription?: string;
   isSellerActive?: boolean; // Admin can disable sellers
+  // Password reset fields
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,6 +113,14 @@ const userSchema = new Schema<IUser>(
     image: {
       type: String,
       default: '',
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false, // Don't include in queries by default
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false, // Don't include in queries by default
     },
   },
   {

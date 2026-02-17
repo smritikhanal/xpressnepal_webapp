@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import User, { IUser } from '../models/User.js';
 import { hashPassword, comparePassword, generateToken } from '../utils/auth.js';
 import { CreateUserDTO, LoginUserDTO } from '../dtos/user.dtos.js';
+import { sendPasswordResetEmail } from '../utils/email.js';
 import mongoose from 'mongoose';
 
 export const register = async (
@@ -293,6 +295,138 @@ export const updateProfile = async (
     return res.status(500).json({
       success: false,
       message: 'Server error during profile update',
+    });
+  }
+};
+
+/**
+ * Forgot Password - Send reset email
+ * @route POST /api/auth/forgot-password
+ * @access Public
+ */
+export const forgotPassword = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a password reset link has been sent.',
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+
+    // Set reset token and expiry (1 hour)
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
+    await user.save();
+
+    // Send reset email
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+      console.log(`Password reset email sent successfully to: ${user.email}`);
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      console.error('Email config:', {
+        user: process.env.USER_EMAIL,
+        hasKey: !!process.env.USER_EMAIL_KEY,
+        appName: process.env.USER_EMAIL_APP_NAME
+      });
+      // Don't fail the request if email fails, token is already saved
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'If an account exists with this email, a password reset link has been sent.',
+    });
+  } catch (error) {
+    console.error('ForgotPassword error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during password reset request',
+    });
+  }
+};
+
+/**
+ * Reset Password - Update password with token
+ * @route POST /api/auth/reset-password
+ * @access Public
+ */
+export const resetPassword = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and new password are required',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // Hash the token to compare with stored hash
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Find user with valid reset token
+    const user = await User.findOne({
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select('+resetPasswordToken +resetPasswordExpires');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token',
+      });
+    }
+
+    // Update password
+    user.passwordHash = await hashPassword(password);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successful. You can now login with your new password.',
+    });
+  } catch (error) {
+    console.error('ResetPassword error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during password reset',
     });
   }
 };

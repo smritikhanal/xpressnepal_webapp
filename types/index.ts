@@ -7,10 +7,13 @@ export interface User {
   _id: string;
   name: string;
   email: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'superadmin' | 'seller' | 'customer';
   phone?: string;
   isVerified: boolean;
   authProvider: 'local' | 'google' | 'github';
+  image?: string;
+  shopName?: string;
+  businessDescription?: string;
   createdAt: string;
   updatedAt: string;
 }

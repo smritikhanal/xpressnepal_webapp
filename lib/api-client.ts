@@ -27,6 +27,18 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * Admin Users Paginated Response Type
+ */
+export interface AdminUsersPaginatedResponse<T = any> {
+  success: boolean;
+  count: number;
+  total: number;
+  page: number;
+  pages: number;
+  data: T;
+}
+
+/**
  * API Client Helper Functions
  */
 export const apiClient = {
@@ -40,6 +52,12 @@ export const apiClient = {
 
     getMe: () =>
       axiosInstance.get<ApiResponse>('/api/auth/me'),
+
+    forgotPassword: (email: string) =>
+      axiosInstance.post<ApiResponse>('/api/auth/forgot-password', { email }),
+
+    resetPassword: (token: string, password: string) =>
+      axiosInstance.post<ApiResponse>('/api/auth/reset-password', { token, password }),
   },
 
   // Product endpoints
@@ -164,8 +182,8 @@ export const apiClient = {
 
   // Admin User endpoints
   adminUsers: {
-    getAll: () =>
-      axiosInstance.get<ApiResponse>('/api/admin/users'),
+    getAll: (params?: { page?: number; limit?: number }) =>
+      axiosInstance.get<AdminUsersPaginatedResponse>('/api/admin/users', { params }),
 
     getById: (id: string) =>
       axiosInstance.get<ApiResponse>(`/api/admin/users/${id}`),
@@ -190,6 +208,21 @@ export const apiClient = {
       axiosInstance.put<ApiResponse>(`/api/auth/${id}`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
+  },
+
+  // Notification endpoints
+  notifications: {
+    getAll: (params?: { page?: number; limit?: number }) =>
+      axiosInstance.get<ApiResponse>('/api/notifications', { params }),
+
+    markAsRead: (id: string) =>
+      axiosInstance.put<ApiResponse>(`/api/notifications/${id}/read`),
+
+    markAllAsRead: () =>
+      axiosInstance.put<ApiResponse>('/api/notifications/read-all'),
+
+    delete: (id: string) =>
+      axiosInstance.delete<ApiResponse>(`/api/notifications/${id}`),
   }
 };
 
