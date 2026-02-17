@@ -5,10 +5,12 @@ import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import categoryRoutes from './routes/category.routes.js';
 import { ApiError } from './utils/apiHelpers.js';
+import { verifyEmailConnection } from './utils/email.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 import path from 'path';
 
 
@@ -39,6 +41,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 Handler
 app.use((_req: Request, res: Response) => {
@@ -70,8 +73,11 @@ app.use((err: Error | ApiError, _req: Request, res: Response, _next: NextFunctio
 // Start server
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  
+  // Verify email connection
+  await verifyEmailConnection();
 });
 
 export default app;
