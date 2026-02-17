@@ -58,6 +58,7 @@ export default function AdminLayout({
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Coupons', href: '/admin/coupons', icon: Tag },
     { name: 'Sellers', href: '/admin/sellers', icon: Store },
+    { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
@@ -75,9 +76,8 @@ export default function AdminLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}

@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import * as z from "zod";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
+import { handleLogin } from "@/lib/actions/auth-action";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -19,8 +20,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginForm() {
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const { setAuth } = useAuthStore();
 
@@ -32,41 +33,27 @@ export default function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const backendUrl =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      const response = await fetch(`${backendUrl}/api/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Login failed");
+  const onSubmit = async (values: LoginFormData) => {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const response = await handleLogin(values);
+        if (response.success) {
+          setAuth(response.data.user, response.data.token);
+          if (response.data.user.role === "superadmin") {
+            return router.replace("/admin/dashboard");
+          } else if (response.data.user.role === "seller") {
+            return router.replace("/seller/dashboard");
+          } else {
+            return router.replace("/");
+          }
+        } else {
+            setError(response.message);
+        }
+      } catch (err: any) {
+        setError(err.message || "Login failed");
       }
-
-      setAuth(result.data.user, result.data.token);
-
-      if (result.data.user.role === "superadmin") {
-        router.push("/admin/dashboard");
-      } else if (result.data.user.role === "seller") {
-        router.push("/seller/dashboard");
-      } else {
-        router.push("/");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (
@@ -82,6 +69,7 @@ export default function LoginForm() {
             placeholder="you@example.com"
             className="pl-10 h-12 border-2 focus-visible:ring-primary"
             {...register("email")}
+            disabled={isPending}
           />
         </div>
         {errors.email && (
@@ -108,6 +96,7 @@ export default function LoginForm() {
             placeholder="••••••••"
             className="pl-10 h-12 border-2 focus-visible:ring-primary"
             {...register("password")}
+            disabled={isPending}
           />
         </div>
         {errors.password && (
@@ -127,9 +116,9 @@ export default function LoginForm() {
       <Button
         type="submit"
         className="w-full h-12 text-base bg-gradient-to-r from-primary to-orange-600 hover:from-primary/90 hover:to-orange-700"
-        disabled={loading}
+        disabled={isPending}
       >
-        {loading ? (
+        {isPending ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Signing in...

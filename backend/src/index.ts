@@ -8,6 +8,8 @@ import { ApiError } from './utils/apiHelpers.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import path from 'path';
 
 
 // Load environment variables
@@ -20,7 +22,9 @@ const app: Application = express();
 connectDB();
 
 // Middleware
-app.use(helmet()); // Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+})); // Security headers
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
@@ -28,15 +32,19 @@ app.use(cors({
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
+// Serve static files
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoryRoutes);
 
 // 404 Handler
 app.use((_req: Request, res: Response) => {
-  res.status(404).json({ 
-    success: false, 
-    message: 'Route not found' 
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
   });
 });
 
