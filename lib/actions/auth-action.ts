@@ -7,7 +7,7 @@ export const handleLogin = async (data: any) => {
     return {
       success: true,
       message: "Login successful",
-      data: response.data?.data || response.data, 
+      data: response.data?.data || response.data,
     };
   } catch (error: any) {
     return {
