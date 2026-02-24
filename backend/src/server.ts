@@ -1,17 +1,12 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
-import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import { ApiError } from './utils/apiHelpers.js';
-import { verifyEmailConnection } from './utils/email.js';
-import { initializeSocket } from './config/socket.js';
-import { setSocketIO } from './utils/socketEvents.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
-import adminRoutes from './routes/admin.routes.js';
 import userRoutes from './routes/user.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import categoryRoutes from './routes/category.routes.js';
@@ -26,7 +21,6 @@ import notificationRoutes from './routes/notification.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import path from 'path';
 
-
 // Load environment variables
 dotenv.config();
 
@@ -37,9 +31,7 @@ const app: Application = express();
 connectDB();
 
 // Middleware
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-})); // Security headers
+app.use(helmet()); // Security headers
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -78,7 +70,6 @@ app.get('/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     endpoints: [
       '/api/auth',
-      '/api/admin',
       '/api/users',
       '/api/categories',
       '/api/products',
@@ -89,15 +80,12 @@ app.get('/health', (_req: Request, res: Response) => {
       '/api/wishlist',
       '/api/coupons',
       '/api/notifications',
-      '/api/upload',
-      '/api/messages',
     ],
   });
 });
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -141,19 +129,8 @@ app.use((err: Error | ApiError, _req: Request, res: Response, _next: NextFunctio
 // Start server
 const PORT = process.env.PORT || 5000;
 
-// Create HTTP server
-const httpServer = createServer(app);
-
-// Initialize Socket.IO
-const io = initializeSocket(httpServer);
-setSocketIO(io);
-
-httpServer.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  console.log(`Socket.IO server initialized`);
-  
-  // Verify email connection
-  await verifyEmailConnection();
 });
 
 export default app;
