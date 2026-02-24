@@ -1,13 +1,43 @@
 import { Request, Response } from 'express';
 import Notification from '../models/Notification.js';
-import { AuthRequest } from '../middleware/auth.middleware.js';
+
+/**
+ * Create a notification
+ * @param userId - User ID to send notification to
+ * @param title - Notification title
+ * @param message - Notification message
+ * @param type - Notification type
+ * @param relatedId - Related entity ID (order, product, etc.)
+ */
+export const createNotification = async (
+  userId: string,
+  title: string,
+  message: string,
+  type: string,
+  relatedId?: string
+) => {
+  try {
+    const notification = await Notification.create({
+      userId,
+      title,
+      message,
+      type,
+      relatedId,
+      isRead: false,
+    });
+    return notification;
+  } catch (error) {
+    console.error('Create notification error:', error);
+    throw error;
+  }
+};
 
 /**
  * Get user notifications
  * @route GET /api/notifications
  * @access Private
  */
-export const getNotifications = async (req: AuthRequest, res: Response) => {
+export const getNotifications = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -46,7 +76,7 @@ export const getNotifications = async (req: AuthRequest, res: Response) => {
  * @route PUT /api/notifications/:id/read
  * @access Private
  */
-export const markAsRead = async (req: AuthRequest, res: Response) => {
+export const markAsRead = async (req: Request, res: Response) => {
   try {
     const notification = await Notification.findOne({
       _id: req.params.id,
@@ -81,7 +111,7 @@ export const markAsRead = async (req: AuthRequest, res: Response) => {
  * @route PUT /api/notifications/read-all
  * @access Private
  */
-export const markAllAsRead = async (req: AuthRequest, res: Response) => {
+export const markAllAsRead = async (req: Request, res: Response) => {
   try {
     await Notification.updateMany(
       { userId: req.user?.id, isRead: false },
@@ -106,7 +136,7 @@ export const markAllAsRead = async (req: AuthRequest, res: Response) => {
  * @route DELETE /api/notifications/:id
  * @access Private
  */
-export const deleteNotification = async (req: AuthRequest, res: Response) => {
+export const deleteNotification = async (req: Request, res: Response) => {
   try {
     const notification = await Notification.findOneAndDelete({
       _id: req.params.id,

@@ -79,8 +79,8 @@ export function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -93,9 +93,9 @@ export function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-2">
           <h3 className="font-semibold">Notifications</h3>
           {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleMarkAllRead}
               className="h-8 text-xs"
             >
@@ -106,28 +106,26 @@ export function NotificationBell() {
         </div>
         <DropdownMenuSeparator />
         <ScrollArea className="h-[400px]">
-          {notifications.length === 0 ? (
+          {(!notifications || notifications.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <Bell className="h-12 w-12 mb-2 opacity-20" />
               <p className="text-sm">No notifications yet</p>
             </div>
           ) : (
             <div className="space-y-1">
-              {notifications.map((notification) => (
+              {notifications?.map((notification) => (
                 <DropdownMenuItem
                   key={notification._id}
-                  className={`flex flex-col items-start p-4 cursor-pointer ${
-                    !notification.isRead ? 'bg-accent/50' : ''
-                  }`}
+                  className={`flex flex-col items-start p-4 cursor-pointer ${!notification.isRead ? 'bg-accent/50' : ''
+                    }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start justify-between w-full">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className={`p-2 rounded-full ${
-                        notification.type === 'order_shipped' ? 'bg-blue-100 text-blue-600' :
-                        notification.type === 'order_delivered' ? 'bg-green-100 text-green-600' :
-                        'bg-orange-100 text-orange-600'
-                      }`}>
+                      <div className={`p-2 rounded-full ${notification.type === 'order_shipped' ? 'bg-blue-100 text-blue-600' :
+                          notification.type === 'order_delivered' ? 'bg-green-100 text-green-600' :
+                            'bg-orange-100 text-orange-600'
+                        }`}>
                         <Package className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">

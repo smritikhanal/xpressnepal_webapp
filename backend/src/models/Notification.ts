@@ -4,9 +4,10 @@ export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'info' | 'success' | 'warning' | 'error' | 'order_placed' | 'order_confirmed' | 'order_shipped' | 'order_delivered' | 'order_cancelled' | 'order_status';
   isRead: boolean;
   link?: string;
+  relatedId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,7 +29,7 @@ const notificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ['info', 'success', 'warning', 'error'],
+      enum: ['info', 'success', 'warning', 'error', 'order_placed', 'order_confirmed', 'order_shipped', 'order_delivered', 'order_cancelled', 'order_status'],
       default: 'info',
     },
     isRead: {
@@ -36,6 +37,9 @@ const notificationSchema = new Schema<INotification>(
       default: false,
     },
     link: {
+      type: String,
+    },
+    relatedId: {
       type: String,
     },
   },

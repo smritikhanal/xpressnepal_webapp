@@ -20,6 +20,7 @@ interface NotificationState {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  addNotification: (notification: Omit<Notification, '_id' | 'userId' | 'updatedAt'> & { id?: string; read?: boolean }) => void;
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -33,13 +34,13 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     try {
       set({ isLoading: true });
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         set({ isLoading: false });
         return;
       }
 
-      const url = unreadOnly 
+      const url = unreadOnly
         ? `${API_BASE}/api/notifications?unreadOnly=true`
         : `${API_BASE}/api/notifications`;
 
@@ -53,23 +54,23 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
       if (data.success) {
         set({
-          notifications: data.data || [],
-          unreadCount: data.unreadCount || 0,
+          notifications: data.data.notifications || [],
+          unreadCount: data.data.unreadCount || 0,
           isLoading: false,
         });
       } else {
-        set({ notifications: [], unreadCount: 0, isLoading: false });
+        set({ isLoading: false });
       }
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
-      set({ notifications: [], unreadCount: 0, isLoading: false });
+      set({ isLoading: false });
     }
   },
 
   markAsRead: async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      
+
       if (!token) return;
 
       const response = await fetch(`${API_BASE}/api/notifications/${id}/read`, {
@@ -83,11 +84,11 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
       if (data.success) {
         // Update local state
-        const notifications = get().notifications.map(n => 
+        const notifications = get().notifications.map(n =>
           n._id === id ? { ...n, isRead: true } : n
         );
         const unreadCount = notifications.filter(n => !n.isRead).length;
-        
+
         set({ notifications, unreadCount });
       }
     } catch (error) {
@@ -98,7 +99,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   markAllAsRead: async () => {
     try {
       const token = localStorage.getItem('token');
-      
+
       if (!token) return;
 
       const response = await fetch(`${API_BASE}/api/notifications/read-all`, {
@@ -123,7 +124,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   deleteNotification: async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      
+
       if (!token) return;
 
       const response = await fetch(`${API_BASE}/api/notifications/${id}`, {
@@ -139,11 +140,30 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         // Remove from local state
         const notifications = get().notifications.filter(n => n._id !== id);
         const unreadCount = notifications.filter(n => !n.isRead).length;
-        
+
         set({ notifications, unreadCount });
       }
     } catch (error) {
       console.error('Failed to delete notification:', error);
     }
+  },
+
+  addNotification: (notification) => {
+    const newNotification: Notification = {
+      _id: notification.id || Date.now().toString(),
+      userId: '',
+      title: notification.title,
+      message: notification.message,
+      type: notification.type as any,
+      orderId: notification.orderId,
+      isRead: notification.read || false,
+      createdAt: notification.createdAt,
+      updatedAt: notification.createdAt,
+    };
+
+    const notifications = [newNotification, ...get().notifications];
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    set({ notifications, unreadCount });
   },
 }));
