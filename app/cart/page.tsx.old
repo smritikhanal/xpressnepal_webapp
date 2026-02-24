@@ -1,0 +1,403 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  ShoppingCart,
+  Minus,
+  Plus,
+  Trash2,
+  ArrowRight,
+  Tag,
+  ShoppingBag,
+  Sparkles,
+  Package,
+  X
+} from 'lucide-react';
+import { useCartStore } from '@/store/cart-store';
+
+export default function CartPage() {
+  const { items, updateQuantity, removeItem, clearCart, getSubtotal, getTotal, discount, setDiscount } = useCartStore();
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
+  const handleApplyCoupon = () => {
+    // Mock coupon validation
+    const validCoupons = {
+      'SAVE10': 10,
+      'SAVE20': 20,
+      'WELCOME': 15,
+    };
+
+    const discountPercent = validCoupons[couponCode.toUpperCase() as keyof typeof validCoupons];
+    
+    if (discountPercent) {
+      const discountAmount = (getSubtotal() * discountPercent) / 100;
+      setDiscount(discountAmount);
+      setCouponApplied(true);
+      setCouponError('');
+    } else {
+      setCouponError('Invalid coupon code');
+      setCouponApplied(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setDiscount(0);
+    setCouponCode('');
+    setCouponApplied(false);
+    setCouponError('');
+  };
+
+  const handleQuantityChange = (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    updateQuantity(productId, newQuantity);
+  };
+
+  const handleRemoveItem = (productId: string) => {
+    removeItem(productId);
+  };
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white relative overflow-hidden">
+        {/* Floating Background Particles */}
+        {[...Array(10)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full bg-primary/5"
+            style={{
+              width: Math.random() * 80 + 40,
+              height: Math.random() * 80 + 40,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              y: [0, Math.random() * 100 - 50],
+              x: [0, Math.random() * 100 - 50],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+
+        <div className="container mx-auto px-4 py-20 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-md mx-auto text-center"
+          >
+            <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+              <ShoppingCart className="h-16 w-16 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold mb-3">Your Cart is Empty</h1>
+            <p className="text-muted-foreground text-lg mb-8">
+              Looks like you haven't added anything to your cart yet.
+            </p>
+            <Link href="/products">
+              <Button size="lg" className="h-14 px-8 text-lg rounded-2xl bg-primary hover:bg-primary/90 shadow-lg">
+                <ShoppingBag className="h-6 w-6 mr-2" />
+                Start Shopping
+              </Button>
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white relative overflow-hidden">
+      {/* Floating Background Particles */}
+      {[...Array(12)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full bg-primary/5"
+          style={{
+            width: Math.random() * 100 + 50,
+            height: Math.random() * 100 + 50,
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+          }}
+          animate={{
+            y: [0, Math.random() * 100 - 50],
+            x: [0, Math.random() * 100 - 50],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{
+            duration: Math.random() * 10 + 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-5xl font-bold mb-2">
+            <span className="bg-gradient-to-r from-primary to-orange-600 bg-clip-text text-transparent">
+              Shopping Cart
+            </span>
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            {items.length} {items.length === 1 ? 'item' : 'items'} in your cart
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2 space-y-4">
+            <AnimatePresence mode="popLayout">
+              {items.map((item, index) => (
+                <motion.div
+                  key={item.product._id}
+                  layout
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 50, height: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card className="border-0 shadow-xl bg-white/70 backdrop-blur-xl overflow-hidden group hover:shadow-2xl transition-all duration-300">
+                    <CardContent className="p-6">
+                      <div className="flex gap-6">
+                        {/* Product Image */}
+                        <Link href={`/products/${item.product.slug}`} className="relative flex-shrink-0">
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className="w-32 h-32 rounded-2xl overflow-hidden bg-white border-2 border-primary/10"
+                          >
+                            <Image
+                              src={item.product.images[0]}
+                              alt={item.product.title}
+                              width={128}
+                              height={128}
+                              className="object-contain p-2"
+                            />
+                          </motion.div>
+                        </Link>
+
+                        {/* Product Info */}
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <Link href={`/products/${item.product.slug}`}>
+                              <h3 className="font-bold text-xl mb-2 hover:text-primary transition-colors line-clamp-2">
+                                {item.product.title}
+                              </h3>
+                            </Link>
+                            {item.product.brand && (
+                              <Badge variant="outline" className="mb-2">
+                                {item.product.brand}
+                              </Badge>
+                            )}
+                            <div className="flex items-baseline gap-2 mt-2">
+                              <span className="text-2xl font-bold text-primary">
+                                NPR {(item.product.discountPrice || item.product.price).toLocaleString()}
+                              </span>
+                              {item.product.discountPrice && (
+                                <span className="text-sm text-muted-foreground line-through">
+                                  NPR {item.product.price.toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Quantity Controls & Remove */}
+                          <div className="flex items-center justify-between mt-4">
+                            <div className="flex items-center border-2 border-primary/20 rounded-2xl overflow-hidden bg-white">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-none hover:bg-primary/10"
+                                onClick={() => handleQuantityChange(item.product._id, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="w-12 text-center font-bold">{item.quantity}</span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-none hover:bg-primary/10"
+                                onClick={() => handleQuantityChange(item.product._id, item.quantity + 1)}
+                                disabled={item.quantity >= item.product.stock}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <span className="text-lg font-bold">
+                                NPR {((item.product.discountPrice || item.product.price) * item.quantity).toLocaleString()}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl hover:bg-red-50 hover:text-red-500"
+                                onClick={() => handleRemoveItem(item.product._id)}
+                              >
+                                <Trash2 className="h-5 w-5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Clear Cart Button */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-2xl border-2 border-red-200 text-red-500 hover:bg-red-50 hover:border-red-300"
+                onClick={clearCart}
+              >
+                <Trash2 className="h-5 w-5 mr-2" />
+                Clear Cart
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Order Summary */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:sticky lg:top-24 h-fit"
+          >
+            <Card className="border-0 shadow-2xl bg-white/70 backdrop-blur-xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-orange-100/50 border-b-2 border-primary/20">
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                  Order Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                {/* Coupon Section */}
+                <div>
+                  <label className="block text-sm font-semibold mb-3">Have a coupon?</label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      disabled={couponApplied}
+                      className="h-12 border-2 border-primary/20 focus-visible:ring-primary rounded-xl"
+                    />
+                    {!couponApplied ? (
+                      <Button
+                        onClick={handleApplyCoupon}
+                        className="h-12 px-6 rounded-xl bg-primary hover:bg-primary/90"
+                      >
+                        <Tag className="h-5 w-5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleRemoveCoupon}
+                        variant="outline"
+                        className="h-12 px-6 rounded-xl border-2 border-primary/20"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    )}
+                  </div>
+                  {couponError && (
+                    <p className="text-sm text-red-500 mt-2">{couponError}</p>
+                  )}
+                  {couponApplied && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <Badge className="mt-2 bg-green-100 text-green-700 hover:bg-green-100">
+                        Coupon applied! 🎉
+                      </Badge>
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="space-y-3 pt-4 border-t-2 border-primary/10">
+                  <div className="flex justify-between text-lg">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-semibold">NPR {getSubtotal().toLocaleString()}</span>
+                  </div>
+                  
+                  {discount > 0 && (
+                    <div className="flex justify-between text-lg text-green-600">
+                      <span>Discount</span>
+                      <span className="font-semibold">- NPR {discount.toLocaleString()}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between text-lg">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="font-semibold text-green-600">FREE</span>
+                  </div>
+
+                  <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+                  <div className="flex justify-between text-2xl font-bold pt-2">
+                    <span>Total</span>
+                    <span className="text-primary">NPR {getTotal().toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {/* Checkout Button */}
+                <Link href="/checkout">
+                  <Button
+                    size="lg"
+                    className="w-full h-14 text-lg rounded-2xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
+                  >
+                    Proceed to Checkout
+                    <ArrowRight className="h-6 w-6 ml-2" />
+                  </Button>
+                </Link>
+
+                {/* Continue Shopping */}
+                <Link href="/products">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full h-12 rounded-2xl border-2 border-primary/20 hover:border-primary mt-4"
+                  >
+                    <Package className="h-5 w-5 mr-2 mt-3" />
+                    Continue Shopping
+                  </Button>
+                </Link>
+
+                {/* Trust Badge */}
+                <div className="text-center pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    🔒 Secure checkout with SSL encryption
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
