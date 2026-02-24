@@ -13,6 +13,7 @@ import {
   Star,
   MessageSquare,
 } from 'lucide-react';
+import { set } from 'mongoose';
 
 interface SellerStats {
   totalRevenue: number;
@@ -61,27 +62,39 @@ export default function SellerDashboardPage() {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user?._id) {
-      fetchDashboardData();
-    }
-  }, [user]);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     try {
+      setError(null);
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError('No authentication token found');
+        setLoading(false);
+        return;
+      }
       
       // Fetch seller's products
       const productsRes = await fetch(`http://localhost:5000/api/products?sellerId=${user?._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      if (!productsRes.ok) {
+        throw new Error(`Products fetch failed: ${productsRes.status}`);
+      }
+      
       const productsData = await productsRes.json();
       
       // Fetch seller's orders
       const ordersRes = await fetch(`http://localhost:5000/api/orders/seller/my-orders`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      if (!ordersRes.ok) {
+        throw new Error(`Orders fetch failed: ${ordersRes.status}`);
+      }
+      
       const ordersData = await ordersRes.json();
       
       // Calculate stats
@@ -120,7 +133,10 @@ export default function SellerDashboardPage() {
           fetch(`http://localhost:5000/api/reviews?productId=${id}`)
             .then(res => res.json())
             .then(data => data.data?.reviews || [])
-            .catch(() => [])
+         .catch(error => {
+            console.error('Error fetching reviews for product:', error);
+            return [];
+          })
         );
         
         const allReviewsArrays = await Promise.all(reviewsPromises);
@@ -137,9 +153,24 @@ export default function SellerDashboardPage() {
       setLoading(false);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch dashboard data');
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Add a small delay to allow for auth store hydration
+    const timer = setTimeout(() => {
+      if (user?._id) {
+        fetchDashboardData();
+      } else {
+        setLoading(false);
+        setError('User not authenticated');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [user?._id]);
 
   const statCards = [
     {
@@ -189,8 +220,9 @@ export default function SellerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-600"></div>
+        <p className="mt-4 text-gray-600">Loading dashboard...</p>
       </div>
     );
   }
