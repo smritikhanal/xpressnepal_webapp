@@ -1,0 +1,60 @@
+import { Request, Response } from 'express';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { ApiError, asyncHandler, sendResponse } from '../utils/apiHelpers.js';
+
+// Ensure uploads directory exists
+const uploadDir = 'uploads/';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer storage
+const storage = multer.diskStorage({
+    destination(req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename(req, file, cb) {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        cb(null, `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`);
+    },
+});
+
+// File filter (images only)
+const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    // Allow all files for now to avoid MIME type issues
+    cb(null, true);
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
+
+// Middleware for single file upload
+export const uploadSingle = upload.single('image');
+
+/**
+ * @desc    Upload an image
+ * @route   POST /api/upload
+ * @access  Private
+ */
+export const uploadImage = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.file) {
+        throw new ApiError('No file uploaded', 400);
+    }
+
+    // Construct public URL
+    // Assuming server serves 'uploads' folder statically
+    // In production, would likely upload to S3/Cloudinary
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+    sendResponse(res, 200, {
+        url: fileUrl,
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+    }, 'Image uploaded successfully');
+});
