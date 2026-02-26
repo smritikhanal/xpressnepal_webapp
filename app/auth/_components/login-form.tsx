@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import * as z from "zod";
 import Link from "next/link";
@@ -24,7 +24,12 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const { setAuth, clearAuth } = useAuthStore();
+
+  // Clear any stale auth state when login page loads
+  useEffect(() => {
+    clearAuth();
+  }, [clearAuth]);
 
   const {
     register,
@@ -42,12 +47,14 @@ export default function LoginForm() {
         if (response.success) {
           setAuth(response.data.user, response.data.token);
           toast.success(`Welcome back, ${response.data.user.name}!`);
+          
+          // Use window.location for reliable redirect after login
           if (response.data.user.role === "superadmin") {
-            return router.replace("/admin/dashboard");
+            window.location.href = "/admin/dashboard";
           } else if (response.data.user.role === "seller") {
-            return router.replace("/seller/dashboard");
+            window.location.href = "/seller/dashboard";
           } else {
-            return router.replace("/");
+            window.location.href = "/";
           }
         } else {
             setError(response.message);
