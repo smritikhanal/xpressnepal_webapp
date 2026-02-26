@@ -46,6 +46,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Fetch cart on mount if authenticated
   useEffect(() => {
@@ -58,10 +59,14 @@ export default function Navbar() {
   useEffect(() => {
     setCartCount(getItemCount());
     setWishlistCount(getWishlistCount());
+    setMounted(true);
   }, [cart, getItemCount, getWishlistCount]);
 
   const handleLogout = () => {
     clearAuth();
+    setTimeout(() => {
+      window.location.replace('/auth/login');
+    }, 100);
   };
 
   const getInitials = (name: string) => {
@@ -155,7 +160,7 @@ export default function Navbar() {
                       </Link>
                     </SheetClose>
 
-                    {isAuthenticated && (
+                    {mounted && isAuthenticated && (
                       <>
                         <div className="pt-4 pb-2">
                           <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</p>
@@ -212,7 +217,7 @@ export default function Navbar() {
 
                   {/* Mobile Menu Footer */}
                   <div className="p-4 border-t mt-auto">
-                    {isAuthenticated ? (
+                    {mounted && isAuthenticated ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-3 px-2">
                           <Avatar className="h-10 w-10 border-2 border-primary/20">
@@ -293,8 +298,8 @@ export default function Navbar() {
                   type="search"
                   placeholder="Search for amazing products..."
                   className={`w-full pl-12 pr-4 h-12 rounded-full border-2 bg-gray-50 dark:bg-gray-900 transition-all duration-300 ${isSearchFocused
-                      ? 'border-primary shadow-lg shadow-primary/10'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    ? 'border-primary shadow-lg shadow-primary/10'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -327,7 +332,7 @@ export default function Navbar() {
             </Button>
 
             {/* Notifications */}
-            {isAuthenticated && (
+            {mounted && isAuthenticated && (
               <div className="hidden sm:block">
                 <NotificationBell />
               </div>
@@ -367,7 +372,7 @@ export default function Navbar() {
 
             {/* Auth Section - Desktop */}
             <div className="hidden md:flex items-center gap-2 ml-2">
-              {isAuthenticated ? (
+              {mounted && isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
