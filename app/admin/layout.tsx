@@ -33,10 +33,18 @@ export default function AdminLayout({
   }, []);
 
   useEffect(() => {
-    if (mounted && (!user || user.role !== 'superadmin')) {
-      router.push('/auth/login');
+    if (mounted) {
+      // Check if user is null or not a superadmin
+      if (!user || user.role !== 'superadmin') {
+        // Prevent multiple redirects
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+          // Clear everything to ensure clean state
+          localStorage.clear();
+          window.location.replace('/auth/login');
+        }
+      }
     }
-  }, [user, router, mounted]);
+  }, [user, mounted]);
 
   if (!mounted || !user || user.role !== 'superadmin') {
     return (
@@ -49,7 +57,10 @@ export default function AdminLayout({
   const handleLogout = () => {
     const { clearAuth } = useAuthStore.getState();
     clearAuth();
-    router.push('/auth/login');
+    // Use replace instead of href to prevent going back
+    setTimeout(() => {
+      window.location.replace('/auth/login');
+    }, 100);
   };
 
   const navigation = [
