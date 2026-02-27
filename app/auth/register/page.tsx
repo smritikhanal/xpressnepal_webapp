@@ -1,4 +1,6 @@
-"use client";
+'use client';
+
+import { Suspense } from 'react';
 import { motion } from "framer-motion";
 import { ShoppingBag, ShoppingCart, Package, Truck, Gift, CreditCard, Tag, Heart, Star, Box } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +76,9 @@ export default function RegisterPage() {
           <CardContent>
            
             {/* Register Form */}
-            <RegisterForm />
+            <Suspense fallback={<div>Loading form...</div>}>
+              <RegisterForm />
+            </Suspense>
           </CardContent>
         </Card>
       </motion.div>

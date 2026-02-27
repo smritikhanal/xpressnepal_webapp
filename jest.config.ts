@@ -5,6 +5,14 @@ const createJestConfig = nextJest({
   dir: './',
 });
 
+/**
+ * Default Jest Configuration (runs all tests)
+ * 
+ * For specific test types:
+ * - Unit tests only: npm run test:unit
+ * - Integration tests only: npm run test:integration
+ * - All tests: npm test
+ */
 const config: Config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',

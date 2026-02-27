@@ -20,9 +20,12 @@ export default function UserLayout({
 
     useEffect(() => {
         if (mounted && !user) {
-            router.push('/auth/login');
+            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+                localStorage.clear();
+                window.location.replace('/auth/login');
+            }
         }
-    }, [user, router, mounted]);
+    }, [user, mounted]);
 
     if (!mounted || !user) {
         return (

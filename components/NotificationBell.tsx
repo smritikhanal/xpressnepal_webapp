@@ -76,11 +76,11 @@ export function NotificationBell() {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative hover:bg-accent hover:text-accent-foreground transition-colors">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -93,11 +93,11 @@ export function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-2">
           <h3 className="font-semibold">Notifications</h3>
           {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleMarkAllRead}
-              className="h-8 text-xs"
+              className="h-8 text-xs hover:bg-blue-600 hover:text-white transition-colors"
             >
               <CheckCheck className="h-4 w-4 mr-1" />
               Mark all read
@@ -106,41 +106,43 @@ export function NotificationBell() {
         </div>
         <DropdownMenuSeparator />
         <ScrollArea className="h-[400px]">
-          {notifications.length === 0 ? (
+          {(!notifications || notifications.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <Bell className="h-12 w-12 mb-2 opacity-20" />
               <p className="text-sm">No notifications yet</p>
             </div>
           ) : (
             <div className="space-y-1">
-              {notifications.map((notification) => (
+              {notifications?.map((notification) => (
                 <DropdownMenuItem
                   key={notification._id}
-                  className={`flex flex-col items-start p-4 cursor-pointer ${
-                    !notification.isRead ? 'bg-accent/50' : ''
+                  className={`flex flex-col items-start p-4 cursor-pointer transition-all duration-200 hover:bg-blue-600 hover:text-white group ${
+                    !notification.isRead ? 'bg-blue-50 border-l-4 border-l-blue-500' : 'hover:border-l-4 hover:border-l-blue-400'
                   }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start justify-between w-full">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className={`p-2 rounded-full ${
-                        notification.type === 'order_shipped' ? 'bg-blue-100 text-blue-600' :
-                        notification.type === 'order_delivered' ? 'bg-green-100 text-green-600' :
-                        'bg-orange-100 text-orange-600'
+                      <div className={`p-2 rounded-full transition-colors ${
+                        notification.type === 'order_shipped' 
+                          ? 'bg-blue-100 text-blue-600 group-hover:bg-blue-500 group-hover:text-white' 
+                          : notification.type === 'order_delivered' 
+                          ? 'bg-green-100 text-green-600 group-hover:bg-green-500 group-hover:text-white' 
+                          : 'bg-orange-100 text-orange-600 group-hover:bg-orange-500 group-hover:text-white'
                       }`}>
                         <Package className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">{notification.title}</p>
+                          <p className="font-medium text-sm group-hover:text-white">{notification.title}</p>
                           {!notification.isRead && (
-                            <div className="h-2 w-2 bg-blue-600 rounded-full" />
+                            <div className="h-2 w-2 bg-blue-600 rounded-full group-hover:bg-white" />
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        <p className="text-sm text-muted-foreground group-hover:text-white/90 mt-1 line-clamp-2">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground group-hover:text-white/75 mt-1">
                           {formatTime(notification.createdAt)}
                         </p>
                       </div>
@@ -148,7 +150,7 @@ export function NotificationBell() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 ml-2"
+                      className="h-8 w-8 ml-2 hover:bg-red-500 hover:text-white transition-colors group-hover:bg-white/20 group-hover:hover:bg-red-500"
                       onClick={(e) => handleDelete(e, notification._id)}
                     >
                       <Trash2 className="h-4 w-4" />

@@ -28,8 +28,6 @@ export const useAuthStore = create<AuthState>()(
         // Store token in localStorage for axios interceptor
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', token);
-          // Also store in cookie for middleware
-          document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
         }
         set({ user, token, isAuthenticated: true });
       },
@@ -39,13 +37,22 @@ export const useAuthStore = create<AuthState>()(
       },
       
       clearAuth: () => {
-        // Clear token from localStorage
+        // Immediately set state to null
+        set({ user: null, token: null, isAuthenticated: false });
+        
+        // Clear all auth-related items from localStorage and cookies
         if (typeof window !== 'undefined') {
           localStorage.removeItem('token');
-          // Also clear cookie
-          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          localStorage.removeItem('auth-storage');
+          // Clear the entire localStorage to prevent any rehydration issues
+          localStorage.clear();
+          
+          // Clear cookies as well
+          document.cookie.split(';').forEach(cookie => {
+            const [name] = cookie.split('=');
+            document.cookie = `${name.trim()}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+          });
         }
-        set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {

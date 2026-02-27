@@ -32,7 +32,17 @@ import { Product, Category } from "@/types";
 import { motion, useScroll, useTransform, useInView, AnimatePresence, Variants } from "framer-motion";
 
 // Animated floating shopping elements for hero
-const FloatingElements = () => (
+const FloatingElements = () => {
+  const [windowWidth, setWindowWidth] = useState(1400);
+
+  useEffect(() => {
+    setWindowWidth(window.innerWidth);
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return (
   <div className="absolute inset-0 overflow-hidden">
     {/* Animated gradient orbs */}
     <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-maroon/30 to-pink-500/20 rounded-full blur-3xl animate-pulse" />
@@ -61,7 +71,7 @@ const FloatingElements = () => (
     <motion.div
       className="absolute bottom-[15%] text-white/10"
       animate={{ 
-        x: [-100, window?.innerWidth || 1400], 
+        x: [-100, windowWidth], 
         y: [0, -10, 0, 10, 0]
       }}
       transition={{ 
@@ -76,7 +86,7 @@ const FloatingElements = () => (
     <motion.div
       className="absolute top-[20%] text-white/8"
       animate={{ 
-        x: [window?.innerWidth || 1400, -100], 
+        x: [windowWidth, -100], 
         y: [0, 5, 0, -5, 0]
       }}
       transition={{ 
@@ -255,7 +265,8 @@ const FloatingElements = () => (
       </defs>
     </svg>
   </div>
-);
+  );
+};
 
 // Playful floating animation variants
 const floatAnimation: Variants = {

@@ -29,6 +29,23 @@ export interface Category {
   updatedAt: string;
 }
 
+/**
+ * Attribute Option with value and price modifier
+ */
+export interface AttributeOption {
+  value: string;
+  priceModifier: number;
+}
+
+/**
+ * Product Attributes Entity
+ */
+export interface ProductAttributes {
+  color?: AttributeOption[];
+  size?: AttributeOption[];
+  weight?: AttributeOption[];
+}
+
 export interface Product {
   _id: string;
   title: string;
@@ -46,7 +63,7 @@ export interface Product {
   brand?: string;
   images: string[];
   stock: number;
-  attributes?: Record<string, string>;
+  attributes?: ProductAttributes;
   ratingAvg: number;
   ratingCount: number;
   isActive: boolean;

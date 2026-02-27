@@ -1,14 +1,29 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-import categoryRoutes from './routes/category.routes.js';
 import { ApiError } from './utils/apiHelpers.js';
+import { verifyEmailConnection } from './utils/email.js';
+import { initializeSocket } from './config/socket.js';
+import { setSocketIO } from './utils/socketEvents.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import userRoutes from './routes/user.routes.js';
+import messageRoutes from './routes/message.routes.js';
+import categoryRoutes from './routes/category.routes.js';
+import productRoutes from './routes/product.routes.js';
+import cartRoutes from './routes/cart.routes.js';
+import orderRoutes from './routes/order.routes.js';
+import addressRoutes from './routes/address.routes.js';
+import reviewRoutes from './routes/review.routes.js';
+import wishlistRoutes from './routes/wishlist.routes.js';
+import couponRoutes from './routes/coupon.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 import path from 'path';
 
 
@@ -26,19 +41,75 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 })); // Security headers
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost with any port (for Flutter web development)
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return callback(null, true);
+    }
+    
+    // Allow specific production origins
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // Serve static files
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+const __dirname = path.resolve();
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health check route
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'XpressNepal API is running',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      '/api/auth',
+      '/api/admin',
+      '/api/users',
+      '/api/categories',
+      '/api/products',
+      '/api/cart',
+      '/api/orders',
+      '/api/addresses',
+      '/api/reviews',
+      '/api/wishlist',
+      '/api/coupons',
+      '/api/notifications',
+      '/api/upload',
+      '/api/messages',
+    ],
+  });
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // 404 Handler
 app.use((_req: Request, res: Response) => {
@@ -70,8 +141,19 @@ app.use((err: Error | ApiError, _req: Request, res: Response, _next: NextFunctio
 // Start server
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(httpServer);
+setSocketIO(io);
+
+httpServer.listen(PORT, async () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Socket.IO server initialized`);
+  
+  // Verify email connection
+  await verifyEmailConnection();
 });
 
 export default app;

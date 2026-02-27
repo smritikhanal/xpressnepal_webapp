@@ -5,10 +5,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  ShoppingCart, 
-  User, 
-  Search, 
+import {
+  ShoppingCart,
+  User,
+  Search,
   Heart,
   Menu,
   X,
@@ -46,6 +46,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   // Fetch cart on mount if authenticated
   useEffect(() => {
@@ -58,10 +59,14 @@ export default function Navbar() {
   useEffect(() => {
     setCartCount(getItemCount());
     setWishlistCount(getWishlistCount());
+    setMounted(true);
   }, [cart, getItemCount, getWishlistCount]);
 
   const handleLogout = () => {
     clearAuth();
+    setTimeout(() => {
+      window.location.replace('/auth/login');
+    }, 100);
   };
 
   const getInitials = (name: string) => {
@@ -78,15 +83,15 @@ export default function Navbar() {
       {/* Main Navigation */}
       <div className="container mx-auto px-4">
         <div className="flex h-18 items-center justify-between gap-4 py-3">
-          
+
           {/* Left Section - Logo & Home */}
           <div className="flex items-center gap-2">
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="md:hidden hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-all duration-200"
                 >
                   <Menu className="h-5 w-5" />
@@ -114,8 +119,8 @@ export default function Navbar() {
                   {/* Mobile Menu Content */}
                   <nav className="flex-1 p-4 space-y-2">
                     <SheetClose asChild>
-                      <Link 
-                        href="/" 
+                      <Link
+                        href="/"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                       >
                         <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
@@ -124,10 +129,10 @@ export default function Navbar() {
                         <span className="font-medium">Home</span>
                       </Link>
                     </SheetClose>
-                    
+
                     <SheetClose asChild>
-                      <Link 
-                        href="/wishlist" 
+                      <Link
+                        href="/wishlist"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                       >
                         <div className="p-2 rounded-lg bg-pink-100 dark:bg-pink-900/30 group-hover:bg-pink-200 dark:group-hover:bg-pink-900/50 transition-colors">
@@ -139,10 +144,10 @@ export default function Navbar() {
                         )}
                       </Link>
                     </SheetClose>
-                    
+
                     <SheetClose asChild>
-                      <Link 
-                        href="/cart" 
+                      <Link
+                        href="/cart"
                         className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                       >
                         <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
@@ -155,14 +160,14 @@ export default function Navbar() {
                       </Link>
                     </SheetClose>
 
-                    {isAuthenticated && (
+                    {mounted && isAuthenticated && (
                       <>
                         <div className="pt-4 pb-2">
                           <p className="px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account</p>
                         </div>
                         <SheetClose asChild>
-                          <Link 
-                            href="/profile" 
+                          <Link
+                            href="/user/profile"
                             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                           >
                             <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
@@ -172,8 +177,8 @@ export default function Navbar() {
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Link 
-                            href="/orders" 
+                          <Link
+                            href="/orders"
                             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                           >
                             <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
@@ -183,8 +188,8 @@ export default function Navbar() {
                           </Link>
                         </SheetClose>
                         <SheetClose asChild>
-                          <Link 
-                            href="/addresses" 
+                          <Link
+                            href="/addresses"
                             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                           >
                             <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
@@ -195,8 +200,8 @@ export default function Navbar() {
                         </SheetClose>
                         {user?.role === 'admin' && (
                           <SheetClose asChild>
-                            <Link 
-                              href="/admin" 
+                            <Link
+                              href="/admin"
                               className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                             >
                               <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors">
@@ -212,7 +217,7 @@ export default function Navbar() {
 
                   {/* Mobile Menu Footer */}
                   <div className="p-4 border-t mt-auto">
-                    {isAuthenticated ? (
+                    {mounted && isAuthenticated ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-3 px-2">
                           <Avatar className="h-10 w-10 border-2 border-primary/20">
@@ -225,8 +230,8 @@ export default function Navbar() {
                             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                           </div>
                         </div>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="w-full rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-800 dark:hover:bg-red-900/30"
                           onClick={handleLogout}
                         >
@@ -277,7 +282,7 @@ export default function Navbar() {
 
           {/* Center Section - Search Bar */}
           <div className={`flex-1 max-w-xl hidden md:block transition-all duration-300 ${isSearchFocused ? 'max-w-2xl' : ''}`}>
-            <form 
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (searchQuery.trim()) {
@@ -292,11 +297,10 @@ export default function Navbar() {
                 <Input
                   type="search"
                   placeholder="Search for amazing products..."
-                  className={`w-full pl-12 pr-4 h-12 rounded-full border-2 bg-gray-50 dark:bg-gray-900 transition-all duration-300 ${
-                    isSearchFocused 
-                      ? 'border-primary shadow-lg shadow-primary/10' 
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                  }`}
+                  className={`w-full pl-12 pr-4 h-12 rounded-full border-2 bg-gray-50 dark:bg-gray-900 transition-all duration-300 ${isSearchFocused
+                    ? 'border-primary shadow-lg shadow-primary/10'
+                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
@@ -318,9 +322,9 @@ export default function Navbar() {
           {/* Right Section - Actions */}
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Mobile Search Toggle */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="md:hidden hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
               onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
             >
@@ -328,7 +332,7 @@ export default function Navbar() {
             </Button>
 
             {/* Notifications */}
-            {isAuthenticated && (
+            {mounted && isAuthenticated && (
               <div className="hidden sm:block">
                 <NotificationBell />
               </div>
@@ -336,9 +340,9 @@ export default function Navbar() {
 
             {/* Wishlist */}
             <Link href="/wishlist">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="relative hover:bg-pink-50 dark:hover:bg-pink-900/20 rounded-full transition-all duration-200 group"
               >
                 <Heart className="h-5 w-5 group-hover:text-pink-500 transition-colors" />
@@ -352,9 +356,9 @@ export default function Navbar() {
 
             {/* Cart */}
             <Link href="/cart">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="relative hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full transition-all duration-200 group"
               >
                 <ShoppingCart className="h-5 w-5 group-hover:text-blue-500 transition-colors" />
@@ -368,11 +372,11 @@ export default function Navbar() {
 
             {/* Auth Section - Desktop */}
             <div className="hidden md:flex items-center gap-2 ml-2">
-              {isAuthenticated ? (
+              {mounted && isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full pl-2 pr-4 h-10"
                     >
                       <Avatar className="h-8 w-8 border-2 border-primary/20">
@@ -399,7 +403,7 @@ export default function Navbar() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                      <Link href="/profile" className="flex items-center gap-3 py-2">
+                      <Link href="/user/profile" className="flex items-center gap-3 py-2">
                         <User className="h-4 w-4 text-purple-500" />
                         My Profile
                       </Link>
@@ -428,7 +432,7 @@ export default function Navbar() {
                       </>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleLogout}
                       className="rounded-lg cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/30"
                     >
@@ -440,15 +444,15 @@ export default function Navbar() {
               ) : (
                 <div className="flex items-center gap-2">
                   <Link href="/auth/login">
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="rounded-full px-5 h-10 font-medium hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
                       Login
                     </Button>
                   </Link>
                   <Link href="/auth/register">
-                    <Button 
+                    <Button
                       className="rounded-full px-5 h-10 font-medium bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all duration-200 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-0.5"
                     >
                       Sign Up
@@ -463,7 +467,7 @@ export default function Navbar() {
         {/* Mobile Search Bar - Expandable */}
         {isMobileSearchOpen && (
           <div className="md:hidden pb-3 animate-in slide-in-from-top duration-200">
-            <form 
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (searchQuery.trim()) {

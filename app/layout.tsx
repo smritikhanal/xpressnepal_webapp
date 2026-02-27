@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/lib/query-client";
 import ConditionalLayout from "@/components/layout/ConditionalLayout";
+import { ToastProvider } from "@/components/providers/toast-provider";
+import RealtimeNotifications from "@/components/RealtimeNotifications";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +24,8 @@ export default function RootLayout({
       <body className={inter.className}>
         <QueryProvider>
           <ConditionalLayout>{children}</ConditionalLayout>
+          <ToastProvider />
+          <RealtimeNotifications />
         </QueryProvider>
       </body>
     </html>
