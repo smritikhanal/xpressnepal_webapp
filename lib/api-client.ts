@@ -1,5 +1,6 @@
 import axiosInstance from './axios';
 import { AxiosResponse } from 'axios';
+import { User } from '../types';
 
 /**
  * Generic API Response Type
@@ -16,26 +17,14 @@ export interface ApiResponse<T = any> {
 export interface PaginatedResponse<T> {
   success: boolean;
   data: {
+    [key: string]: T[] | any; // Allow other properties like pagination
     pagination: {
       page: number;
       limit: number;
       total: number;
       pages: number;
     };
-    [key: string]: any;
   };
-}
-
-/**
- * Admin Users Paginated Response Type
- */
-export interface AdminUsersPaginatedResponse<T = any> {
-  success: boolean;
-  count: number;
-  total: number;
-  page: number;
-  pages: number;
-  data: T;
 }
 
 /**
@@ -52,12 +41,6 @@ export const apiClient = {
 
     getMe: () =>
       axiosInstance.get<ApiResponse>('/api/auth/me'),
-
-    forgotPassword: (email: string) =>
-      axiosInstance.post<ApiResponse>('/api/auth/forgot-password', { email }),
-
-    resetPassword: (token: string, password: string) =>
-      axiosInstance.post<ApiResponse>('/api/auth/reset-password', { token, password }),
   },
 
   // Product endpoints
@@ -180,50 +163,41 @@ export const apiClient = {
       axiosInstance.delete<ApiResponse>(`/api/wishlist/remove/${productId}`),
   },
 
-  // Admin User endpoints
+  // User endpoints
+  users: {
+    getAll: (params?: { page?: number; limit?: number; role?: string; search?: string }) =>
+      axiosInstance.get<PaginatedResponse<User>>('/api/users', { params }),
+  },
+
+  user: {
+    updateProfile: (id: string, data: any) =>
+      axiosInstance.put<ApiResponse>(`/api/users/${id}`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }),
+
+    getById: (id: string) =>
+      axiosInstance.get<ApiResponse>(`/api/users/${id}`),
+  },
+
+  // Admin User Management
   adminUsers: {
     getAll: (params?: { page?: number; limit?: number }) =>
-      axiosInstance.get<AdminUsersPaginatedResponse>('/api/admin/users', { params }),
+      axiosInstance.get<ApiResponse>('/api/admin/users', { params }),
 
     getById: (id: string) =>
       axiosInstance.get<ApiResponse>(`/api/admin/users/${id}`),
 
-    create: (data: FormData) =>
-      axiosInstance.post<ApiResponse>('/api/admin/users', data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }),
+    create: (data: any) =>
+      axiosInstance.post<ApiResponse>('/api/admin/users', data),
 
-    update: (id: string, data: FormData) =>
-      axiosInstance.put<ApiResponse>(`/api/admin/users/${id}`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }),
+    update: (id: string, data: any) =>
+      axiosInstance.put<ApiResponse>(`/api/admin/users/${id}`, data),
 
     delete: (id: string) =>
       axiosInstance.delete<ApiResponse>(`/api/admin/users/${id}`),
   },
-
-  // User Profile endpoints
-  user: {
-    updateProfile: (id: string, data: FormData) =>
-      axiosInstance.put<ApiResponse>(`/api/auth/${id}`, data, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }),
-  },
-
-  // Notification endpoints
-  notifications: {
-    getAll: (params?: { page?: number; limit?: number }) =>
-      axiosInstance.get<ApiResponse>('/api/notifications', { params }),
-
-    markAsRead: (id: string) =>
-      axiosInstance.put<ApiResponse>(`/api/notifications/${id}/read`),
-
-    markAllAsRead: () =>
-      axiosInstance.put<ApiResponse>('/api/notifications/read-all'),
-
-    delete: (id: string) =>
-      axiosInstance.delete<ApiResponse>(`/api/notifications/${id}`),
-  }
 };
 
 export default apiClient;

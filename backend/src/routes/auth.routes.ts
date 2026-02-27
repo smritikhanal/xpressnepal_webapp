@@ -9,6 +9,14 @@ const router = Router();
 
 router.post('/register', validate(registerSchema), register);
 router.post('/login', validate(loginSchema), login);
+router.post('/logout', protect, (req, res) => {
+  // JWT is stateless, so logout is handled client-side
+  // This endpoint exists for consistency and future token blacklisting if needed
+  res.status(200).json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+});
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.put('/:id', protect, upload.single('image'), updateProfile);

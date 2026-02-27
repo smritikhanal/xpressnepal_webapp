@@ -1,15 +1,71 @@
 export const API_ENDPOINTS = {
     AUTH: {
-        LOGIN: '/auth/login',
-        REGISTER: '/auth/register',
-        UPDATE_PROFILE: (id: string) => `/auth/${id}`,
+        LOGIN: '/api/auth/login',
+        REGISTER: '/api/auth/register',
+        ME: '/api/auth/me',
+        BECOME_SELLER: '/api/auth/become-seller',
+        FORGOT_PASSWORD: '/api/auth/forgot-password',
+        RESET_PASSWORD: (token: string) => `/api/auth/reset-password/${token}`,
     },
-    ADMIN: {
-        USERS: {
-            CREATE: '/admin/users',
-            LIST: '/admin/users',
-            UPDATE: (id: string) => `/admin/users/${id}`,
-            DELETE: (id: string) => `/admin/users/${id}`,
-        }
-    }
+    USERS: {
+        LIST: '/api/users',
+        GET: (id: string) => `/api/users/${id}`,
+        UPDATE: (id: string) => `/api/users/${id}`,
+        DELETE: (id: string) => `/api/users/${id}`,
+        TOGGLE_SELLER: (id: string) => `/api/users/${id}/toggle-seller`,
+    },
+    PRODUCTS: {
+        LIST: '/api/products',
+        CREATE: '/api/products',
+        GET_BY_SLUG: (slug: string) => `/api/products/${slug}`,
+        GET_BY_ID: (id: string) => `/api/products/id/${id}`,
+        UPDATE: (id: string) => `/api/products/id/${id}`,
+        DELETE: (id: string) => `/api/products/id/${id}`,
+    },
+    ORDERS: {
+        CREATE: '/api/orders',
+        GET_MY_ORDERS: '/api/orders',
+        GET_ALL_ADMIN: '/api/orders/admin/all',
+        GET_SELLER_ORDERS: '/api/orders/seller/my-orders',
+        GET_BY_ID: (id: string) => `/api/orders/${id}`,
+        UPDATE_STATUS: (id: string) => `/api/orders/${id}/status`,
+        UPDATE_TRACKING: (id: string) => `/api/orders/${id}/tracking`,
+    },
+    CART: {
+        GET: '/api/cart',
+        ADD: '/api/cart/add',
+        UPDATE: '/api/cart/update',
+        REMOVE: (productId: string) => `/api/cart/remove/${productId}`,
+        CLEAR: '/api/cart/clear',
+    },
+    CATEGORIES: {
+        LIST: '/api/categories',
+        GET_BY_SLUG: (slug: string) => `/api/categories/${slug}`,
+        CREATE: '/api/categories',
+        UPDATE: (id: string) => `/api/categories/id/${id}`,
+        DELETE: (id: string) => `/api/categories/id/${id}`,
+    },
+    ADDRESSES: {
+        LIST: '/api/addresses',
+        ADD: '/api/addresses',
+        UPDATE: (id: string) => `/api/addresses/${id}`,
+        DELETE: (id: string) => `/api/addresses/${id}`,
+    },
+    REVIEWS: {
+        GET_BY_PRODUCT: (productId: string) => `/api/reviews/${productId}`,
+        CREATE: '/api/reviews',
+        DELETE: (id: string) => `/api/reviews/${id}`,
+    },
+    WISHLIST: {
+        GET: '/api/wishlist',
+        ADD: '/api/wishlist/add',
+        REMOVE: (productId: string) => `/api/wishlist/remove/${productId}`,
+    },
+    COUPONS: {
+        LIST: '/api/coupons',
+        VALIDATE: '/api/coupons/validate',
+    },
+    UPLOAD: {
+        SINGLE: '/api/upload',
+    },
 };

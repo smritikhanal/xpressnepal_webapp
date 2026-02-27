@@ -14,13 +14,20 @@ const axiosInstance = axios.create({
 
 // Request interceptor to attach token
 axiosInstance.interceptors.request.use(
-  (config) => {
-    // Get token from localStorage (client-side only)
+  async (config) => {
+    // Get token from localStorage (client-side) or cookies (server-side)
+    let token: string | undefined;
+
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      token = localStorage.getItem('token') || undefined;
+    } else {
+      const { cookies } = await import('next/headers');
+      const cookieStore = await cookies();
+      token = cookieStore.get('token')?.value;
+    }
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
