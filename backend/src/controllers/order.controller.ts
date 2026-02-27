@@ -140,14 +140,29 @@ export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
  * @access  Private
  */
 export const getOrderById = asyncHandler(async (req: Request, res: Response) => {
-  const order = await Order.findById(req.params.id);
+  const order = await Order.findById(req.params.id)
+    .populate('userId', 'name email');
 
   if (!order) {
     throw new ApiError('Order not found', 404);
   }
 
-  // Check if user owns this order or is admin
-  if (order.userId.toString() !== req.user?.id && req.user?.role !== 'admin') {
+  // Check authorization
+  const isCustomer = order.userId._id.toString() === req.user?.id;
+  const isSuperAdmin = req.user?.role === 'superadmin';
+  
+  // For sellers, check if any product in the order belongs to them
+  let isSeller = false;
+  if (req.user?.role === 'seller') {
+    const productIds = order.orderItems.map((item: any) => item.productId);
+    const sellerProducts = await Product.find({
+      _id: { $in: productIds },
+      sellerId: req.user.id
+    });
+    isSeller = sellerProducts.length > 0;
+  }
+
+  if (!isCustomer && !isSuperAdmin && !isSeller) {
     throw new ApiError('Not authorized to view this order', 403);
   }
 
