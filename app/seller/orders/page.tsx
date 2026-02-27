@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
-import { Search, Package, MapPin, X } from 'lucide-react';
+import { Search, Package, MapPin, X, Eye } from 'lucide-react';
+import Link from 'next/link';
 
 interface Order {
   _id: string;
@@ -442,14 +443,24 @@ export default function SellerOrdersPage() {
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button 
-                        onClick={() => openTrackingModal(order._id)}
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        title="Update delivery tracking"
-                      >
-                        <MapPin className="w-4 h-4" />
-                        Track
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/seller/orders/${order._id}`}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          title="View order details"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Show
+                        </Link>
+                        <button 
+                          onClick={() => openTrackingModal(order._id)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          title="Update delivery tracking"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Track
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

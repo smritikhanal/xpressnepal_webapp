@@ -18,6 +18,7 @@ export default function SellerCreateProductPage() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageUrl, setImageUrl] = useState('');
   const [formData, setFormData] = useState({
@@ -79,6 +80,51 @@ export default function SellerCreateProductPage() {
         images: [...formData.images, imageUrl.trim()],
       });
       setImageUrl('');
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setErrors({ ...errors, upload: '' });
+
+    try {
+      const token = localStorage.getItem('token');
+      const uploadFormData = new FormData();
+      
+      // Add all selected files to FormData
+      Array.from(files).forEach((file) => {
+        uploadFormData.append('images', file);
+      });
+
+      const response = await fetch('http://localhost:5000/api/upload/multiple', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: uploadFormData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const uploadedUrls = data.data.files.map((file: any) => file.url);
+        setFormData({
+          ...formData,
+          images: [...formData.images, ...uploadedUrls],
+        });
+      } else {
+        setErrors({ ...errors, upload: data.message || 'Failed to upload images' });
+      }
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      setErrors({ ...errors, upload: 'An error occurred while uploading images' });
+    } finally {
+      setUploading(false);
+      // Reset file input
+      e.target.value = '';
     }
   };
 
@@ -342,15 +388,43 @@ export default function SellerCreateProductPage() {
           {/* Images */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Product Images * (URL)
+              Product Images *
             </label>
+            
+            {/* File Upload */}
+            <div className="mb-3">
+              <label className="flex items-center justify-center px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={uploading}
+                />
+                <Upload className="w-5 h-5 mr-2 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  {uploading ? 'Uploading...' : 'Upload Images (Click to select files)'}
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500">
+                Select multiple images (max 5MB each, up to 10 images)
+              </p>
+            </div>
+
+            {/* Upload Error */}
+            {errors.upload && (
+              <p className="mb-2 text-sm text-red-600">{errors.upload}</p>
+            )}
+
+            {/* URL Input */}
             <div className="flex gap-2">
               <input
                 type="url"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="https://example.com/image.jpg"
+                placeholder="Or enter image URL: https://example.com/image.jpg"
               />
               <button
                 type="button"
