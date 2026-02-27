@@ -157,7 +157,9 @@ export default function UserProfilePage() {
 
     const handleLogout = () => {
         clearAuth();
-        router.push('/');
+        setTimeout(() => {
+            window.location.replace('/auth/login');
+        }, 100);
     };
 
     if (!user) {
