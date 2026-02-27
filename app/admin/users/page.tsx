@@ -37,13 +37,15 @@ export default function AdminUsersPage() {
             setLoading(true);
             try {
                 const response = await apiClient.adminUsers.getAll({ page, limit });
+                console.log('Users response:', response.data);
                 if (response.data.success) {
-                    setUsers(response.data.data);
+                    setUsers(Array.isArray(response.data.data) ? response.data.data : []);
                     setTotalPages(response.data.pages || 1);
                     setTotalUsers(response.data.total || 0);
                 }
             } catch (error) {
                 console.error('Failed to fetch users:', error);
+                setUsers([]);
             } finally {
                 setLoading(false);
             }
