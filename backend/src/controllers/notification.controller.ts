@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Notification from '../models/Notification.js';
+import { emitNotification } from '../utils/socketEvents.js';
 
 /**
  * Create a notification
@@ -25,6 +26,17 @@ export const createNotification = async (
       relatedId,
       isRead: false,
     });
+    
+    // Emit real-time notification via socket
+    emitNotification(userId, {
+      id: notification._id.toString(),
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      relatedId: notification.relatedId,
+      createdAt: notification.createdAt,
+    });
+    
     return notification;
   } catch (error) {
     console.error('Create notification error:', error);

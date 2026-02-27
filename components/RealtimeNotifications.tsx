@@ -17,17 +17,18 @@ export default function RealtimeNotifications() {
     // Handle new notifications
     const handleNotification = (data: any) => {
       addNotification({
-        id: data.id || Date.now().toString(),
+        id: data.id,
         type: data.type || 'general',
         title: data.title,
         message: data.message,
         isRead: false,
-        createdAt: new Date().toISOString(),
+        createdAt: data.createdAt || new Date().toISOString(),
+        orderId: data.relatedId,
       });
 
       toast(data.message, {
         icon: '🔔',
-        duration: 4000,
+        duration: 5000,
       });
     };
 
@@ -39,7 +40,7 @@ export default function RealtimeNotifications() {
         });
 
         addNotification({
-          id: Date.now().toString(),
+          id: `temp_${Date.now()}`,
           type: 'general',
           title: 'New Order',
           message: `You have received a new order worth ${data.totalAmount} NPR`,
@@ -59,7 +60,7 @@ export default function RealtimeNotifications() {
           });
 
           addNotification({
-            id: Date.now().toString(),
+            id: `temp_${Date.now()}`,
             type: 'general',
             title: 'Low Stock',
             message: `${data.productName} has only ${data.stock} items left`,
@@ -78,7 +79,7 @@ export default function RealtimeNotifications() {
       });
 
       addNotification({
-        id: Date.now().toString(),
+        id: `temp_${Date.now()}`,
         type: 'general',
         title: 'New Message',
         message: data.message || 'You have a new message',
@@ -87,9 +88,24 @@ export default function RealtimeNotifications() {
       });
     };
 
+    // Handle order status updates (for real-time feedback, notification comes via notification:new)
+    const handleOrderUpdate = (data: any) => {
+      const orderIdShort = data.orderId?.slice(-8) || 'N/A';
+      const statusMessage = data.message || `Order #${orderIdShort} status updated`;
+      
+      toast(statusMessage, {
+        icon: '📦',
+        duration: 5000,
+      });
+      
+      // Note: Notification is handled by notification:new event from backend
+      // This handler is just for immediate visual feedback
+    };
+
     // Register event listeners
     on('notification:new', handleNotification);
     on('order:new', handleNewOrder);
+    on('order:updated', handleOrderUpdate);
     on('product:stock-updated', handleStockUpdate);
     on('message:new', handleNewMessage);
 
@@ -97,6 +113,7 @@ export default function RealtimeNotifications() {
     return () => {
       off('notification:new', handleNotification);
       off('order:new', handleNewOrder);
+      off('order:updated', handleOrderUpdate);
       off('product:stock-updated', handleStockUpdate);
       off('message:new', handleNewMessage);
     };
