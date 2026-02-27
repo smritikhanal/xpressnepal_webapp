@@ -9,7 +9,14 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --config jest.config.unit.ts",
+    "test:unit:watch": "jest --config jest.config.unit.ts --watch",
+    "test:unit:coverage": "jest --config jest.config.unit.ts --coverage",
+    "test:integration": "jest --config jest.config.integration.ts",
+    "test:integration:watch": "jest --config jest.config.integration.ts --watch",
+    "test:integration:coverage": "jest --config jest.config.integration.ts --coverage",
+    "test:all": "npm run test:unit && npm run test:integration"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -24,6 +31,7 @@
     "@radix-ui/react-slot": "^1.2.4",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-toast": "^1.2.15",
     "@splinetool/react-spline": "^4.1.0",
     "@splinetool/runtime": "^1.12.27",
     "@tanstack/react-query": "^5.90.12",
