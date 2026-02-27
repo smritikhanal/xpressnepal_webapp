@@ -87,10 +87,11 @@ export default function RegisterForm() {
         
         if (response.success) {
           setAuth(response.data.user, response.data.token);
+          // Use window.location for reliable redirect after registration
           if (response.data.user.role === 'seller') {
-            return router.replace('/seller/dashboard');
+            window.location.href = '/seller/dashboard';
           } else {
-            return router.replace('/');
+            window.location.href = '/';
           }
         } else {
              setError(response.message);
