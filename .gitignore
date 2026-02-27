@@ -46,3 +46,7 @@ video-script.md
 rules.md
 
 .agent/
+
+# Documentation and agent files
+*.md
+*.agent
