@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useCartStore } from '@/store/cart-store';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function WishlistPage() {
   const { items, removeItem, clearWishlist } = useWishlistStore();
@@ -163,7 +164,7 @@ export default function WishlistPage() {
                   <Link href={`/products/${product.slug}`}>
                     <div className="relative aspect-square overflow-hidden">
                       <Image
-                        src={product.images[0]}
+                        src={normalizeImageUrl(product.images[0])}
                         alt={product.title}
                         fill
                         className="object-contain p-4 group-hover:scale-110 transition-transform duration-500"

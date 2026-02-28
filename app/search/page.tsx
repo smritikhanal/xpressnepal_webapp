@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -137,7 +138,7 @@ export default function SearchPage() {
                 <div className="relative aspect-square overflow-hidden bg-gray-100">
                   <Link href={`/products/${product.slug}`}>
                     <Image
-                      src={product.images[0] || '/placeholder.png'}
+                      src={normalizeImageUrl(product.images[0] || '/placeholder.png')}
                       alt={product.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"

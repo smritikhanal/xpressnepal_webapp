@@ -37,6 +37,7 @@ import { Product, Review } from '@/types';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -389,7 +390,7 @@ export default function ProductDetailPage() {
                   onClick={() => setIsZoomed(!isZoomed)}
                 >
                   <Image
-                    src={product.images[selectedImage]}
+                    src={normalizeImageUrl(product.images[selectedImage])}
                     alt={`${product.title} - Image ${selectedImage + 1}`}
                     fill
                     className="object-contain p-8"
@@ -455,7 +456,7 @@ export default function ProductDetailPage() {
                     }`}
                   >
                     <Image
-                      src={image}
+                      src={normalizeImageUrl(image)}
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-contain p-2 bg-white"

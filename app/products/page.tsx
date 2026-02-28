@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Product, Category } from '@/types';
 import { useCartStore } from '@/store/cart-store';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -551,7 +552,7 @@ export default function ProductsPage() {
                               className="relative w-full h-full"
                             >
                               <Image
-                                src={product.images[0]}
+                                src={normalizeImageUrl(product.images[0])}
                                 alt={product.title}
                                 fill
                                 className="object-cover"

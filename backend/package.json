@@ -12,7 +12,8 @@
     "test:watch": "jest --watch --config jest.config.cjs",
     "test:coverage": "jest --coverage --config jest.config.cjs",
     "test:verbose": "jest --verbose --config jest.config.cjs",
-    "seed:admin": "tsx src/scripts/seedSuperAdmin.ts"
+    "seed:admin": "tsx src/scripts/seedSuperAdmin.ts",
+    "fix:images": "tsx src/scripts/fix-image-urls.ts"
   },
   "keywords": [
     "ecommerce",

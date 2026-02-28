@@ -32,6 +32,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { normalizeImageUrl } from '@/lib/utils';
 
 interface Address {
   _id: string;
@@ -679,7 +680,7 @@ export default function CheckoutPage() {
                       <div className="relative w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                         {item.productId.images?.[0] ? (
                           <Image
-                            src={item.productId.images[0]}
+                            src={normalizeImageUrl(item.productId.images[0])}
                             alt={item.productId.title}
                             fill
                             className="object-cover"
