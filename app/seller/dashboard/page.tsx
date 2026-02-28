@@ -76,7 +76,7 @@ export default function SellerDashboardPage() {
       }
       
       // Fetch seller's products
-      const productsRes = await fetch(`http://localhost:5000/api/products?sellerId=${user?._id}`, {
+      const productsRes = await fetch(`http://localhost:5000/api/products?sellerId=${user?.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -161,7 +161,7 @@ export default function SellerDashboardPage() {
   useEffect(() => {
     // Add a small delay to allow for auth store hydration
     const timer = setTimeout(() => {
-      if (user?._id) {
+      if (user?.id) {
         fetchDashboardData();
       } else {
         setLoading(false);
@@ -170,7 +170,7 @@ export default function SellerDashboardPage() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [user?._id]);
+  }, [user?.id]);
 
   const statCards = [
     {

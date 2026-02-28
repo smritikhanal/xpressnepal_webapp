@@ -7,6 +7,8 @@ import { ArrowLeft, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import AttributeInput from '@/components/admin/AttributeInput';
 import { AttributeOption, ProductAttributes } from '@/types';
+import { normalizeImageUrl } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface Category {
   _id: string;
@@ -17,6 +19,7 @@ interface Category {
 export default function SellerCreateProductPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -115,12 +118,17 @@ export default function SellerCreateProductPage() {
           ...formData,
           images: [...formData.images, ...uploadedUrls],
         });
+        toast({ title: 'Uploaded', description: `${uploadedUrls.length} image(s) uploaded successfully` });
       } else {
-        setErrors({ ...errors, upload: data.message || 'Failed to upload images' });
+        const errMsg = data.message || 'Failed to upload images';
+        setErrors({ ...errors, upload: errMsg });
+        toast({ title: 'Upload failed', description: errMsg, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error uploading images:', error);
-      setErrors({ ...errors, upload: 'An error occurred while uploading images' });
+      const errMsg = 'An error occurred while uploading images';
+      setErrors({ ...errors, upload: errMsg });
+      toast({ title: 'Upload error', description: errMsg, variant: 'destructive' });
     } finally {
       setUploading(false);
       // Reset file input
@@ -184,14 +192,15 @@ export default function SellerCreateProductPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Product created successfully!');
+        toast({ title: 'Success', description: 'Product created successfully!', variant: 'default' });
         router.push('/seller/products');
       } else {
-        alert(data.message || 'Failed to create product');
+        const errMsg = data.message || 'Failed to create product';
+        toast({ title: 'Error', description: errMsg, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('An error occurred while creating the product');
+      toast({ title: 'Error', description: 'An error occurred while creating the product', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -447,7 +456,7 @@ export default function SellerCreateProductPage() {
                     className="relative group border border-gray-200 rounded-lg overflow-hidden"
                   >
                     <img
-                      src={image}
+                      src={normalizeImageUrl(image)}
                       alt={`Product ${index + 1}`}
                       className="w-full h-32 object-cover"
                     />
