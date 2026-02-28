@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Package, ChevronRight, ShoppingBag, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
+import toast from 'react-hot-toast';
 
 interface OrderItem {
   productId: string;
@@ -103,11 +104,11 @@ export default function OrdersPage() {
         await addItem(item.productId, item.quantity);
       }
       
-      alert(`${order.orderItems.length} item(s) added to cart!`);
+      toast.success(`${order.orderItems.length} item(s) added to cart!`);
       router.push('/cart');
     } catch (error) {
       console.error('Error reordering:', error);
-      alert('Failed to add items to cart. Please try again.');
+      toast.error('Failed to add items to cart. Please try again.');
     } finally {
       setReordering(null);
     }

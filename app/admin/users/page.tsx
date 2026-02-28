@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface User {
     _id: string;
@@ -59,7 +60,7 @@ export default function AdminUsersPage() {
             await apiClient.adminUsers.delete(id);
             setUsers(users.filter(u => u._id !== id));
         } catch (error) {
-            alert('Failed to delete user');
+            toast.error('Failed to delete user');
         }
     }
 

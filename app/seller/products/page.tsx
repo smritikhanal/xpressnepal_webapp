@@ -8,6 +8,8 @@ import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -53,6 +55,8 @@ export default function SellerProductsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [showReviewsDialog, setShowReviewsDialog] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchProducts = async () => {
     try {
@@ -94,18 +98,22 @@ export default function SellerProductsPage() {
     return () => clearTimeout(timer);
   }, [user?.id]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+  const handleDelete = (id: string) => {
+    setProductToDelete(id);
+  };
 
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    setDeleting(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/products/id/${id}`, {
+      const response = await fetch(`http://localhost:5000/api/products/id/${productToDelete}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
-        setProducts(products.filter((p) => p._id !== id));
+        setProducts(products.filter((p) => p._id !== productToDelete));
         toast({ title: 'Deleted', description: 'Product deleted successfully' });
       } else {
         toast({ title: 'Error', description: 'Failed to delete product', variant: 'destructive' });
@@ -113,6 +121,9 @@ export default function SellerProductsPage() {
     } catch (error) {
       console.error('Error deleting product:', error);
       toast({ title: 'Error', description: 'Error deleting product', variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+      setProductToDelete(null);
     }
   };
 
@@ -246,11 +257,11 @@ export default function SellerProductsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        ${product.price.toFixed(2)}
+                        NPR {product.price.toFixed(2)}
                       </div>
                       {product.discountPrice && (
                         <div className="text-xs text-gray-500 line-through">
-                          ${product.discountPrice.toFixed(2)}
+                          NPR {product.discountPrice.toFixed(2)}
                         </div>
                       )}
                     </td>
@@ -398,6 +409,41 @@ export default function SellerProductsPage() {
               </>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!productToDelete} onOpenChange={(open) => { if (!open) setProductToDelete(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Delete Product
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this product? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              onClick={() => setProductToDelete(null)}
+              disabled={deleting}
+              className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="flex-1 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {deleting ? (
+                <><span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Deleting...</>
+              ) : (
+                <><Trash2 className="h-4 w-4" />Delete</>
+              )}
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

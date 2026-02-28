@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import toast from 'react-hot-toast';
 import { Bell, Lock, User, Store } from 'lucide-react';
 
 export default function SellerSettingsPage() {
@@ -75,13 +76,13 @@ export default function SellerSettingsPage() {
 
       if (data.success) {
         setUser(data.data);
-        alert('Account settings updated!');
+        toast.success('Account settings updated!');
       } else {
-        alert(data.message || 'Failed to update account');
+        toast.error(data.message || 'Failed to update account');
       }
     } catch (error) {
       console.error('Error updating account:', error);
-      alert('An error occurred while updating account');
+      toast.error('An error occurred while updating account');
     } finally {
       setLoading(false);
     }
@@ -90,7 +91,7 @@ export default function SellerSettingsPage() {
   const handleSecuritySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (securityData.newPassword !== securityData.confirmPassword) {
-      alert('Passwords do not match!');
+      toast.error('Passwords do not match!');
       return;
     }
     setLoading(true);
@@ -98,7 +99,7 @@ export default function SellerSettingsPage() {
     setTimeout(() => {
       setLoading(false);
       setSecurityData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      alert('Password changed successfully!');
+      toast.success('Password changed successfully!');
     }, 1000);
   };
 
@@ -108,7 +109,7 @@ export default function SellerSettingsPage() {
     // TODO: API call to update notification preferences
     setTimeout(() => {
       setLoading(false);
-      alert('Notification preferences saved!');
+      toast.success('Notification preferences saved!');
     }, 1000);
   };
 
@@ -131,13 +132,13 @@ export default function SellerSettingsPage() {
 
       if (data.success) {
         setUser(data.data);
-        alert('Shop settings updated!');
+        toast.success('Shop settings updated!');
       } else {
-        alert(data.message || 'Failed to update shop settings');
+        toast.error(data.message || 'Failed to update shop settings');
       }
     } catch (error) {
       console.error('Error updating shop settings:', error);
-      alert('An error occurred while updating shop settings');
+      toast.error('An error occurred while updating shop settings');
     } finally {
       setLoading(false);
     }

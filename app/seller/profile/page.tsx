@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import toast from 'react-hot-toast';
 import { Store, Package, DollarSign, Calendar } from 'lucide-react';
 
 interface SellerStats {
@@ -93,7 +94,7 @@ export default function SellerProfilePage() {
 
       if (data.success) {
         setUser(data.data);
-        alert('Profile updated successfully!');
+        toast.success('Profile updated successfully!');
         // Refresh form data with updated values
         setFormData({
           name: data.data.name || '',
@@ -102,11 +103,11 @@ export default function SellerProfilePage() {
           businessDescription: data.data.businessDescription || '',
         });
       } else {
-        alert(data.message || 'Failed to update profile');
+        toast.error(data.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('An error occurred while updating profile');
+      toast.error('An error occurred while updating profile');
     } finally {
       setLoading(false);
     }

@@ -42,6 +42,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import toast from 'react-hot-toast';
 
 interface Coupon {
   _id: string;
@@ -125,11 +126,11 @@ export default function CouponsPage() {
         setIsDialogOpen(false);
         resetForm();
       } else {
-        alert(data.message || 'Failed to save coupon');
+        toast.error(data.message || 'Failed to save coupon');
       }
     } catch (error) {
       console.error('Failed to save coupon:', error);
-      alert('Failed to save coupon');
+      toast.error('Failed to save coupon');
     }
   };
 
@@ -149,11 +150,11 @@ export default function CouponsPage() {
       if (data.success) {
         await fetchCoupons();
       } else {
-        alert(data.message || 'Failed to delete coupon');
+        toast.error(data.message || 'Failed to delete coupon');
       }
     } catch (error) {
       console.error('Failed to delete coupon:', error);
-      alert('Failed to delete coupon');
+      toast.error('Failed to delete coupon');
     }
   };
 

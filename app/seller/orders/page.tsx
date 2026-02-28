@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import toast from 'react-hot-toast';
 import { Search, Package, MapPin, X, Eye } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,11 +104,11 @@ export default function SellerOrdersPage() {
           )
         );
       } else {
-        alert('Failed to update order status');
+        toast.error('Failed to update order status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error updating order status');
+      toast.error('Error updating order status');
     }
   };
 
@@ -129,13 +130,13 @@ export default function SellerOrdersPage() {
             order._id === orderId ? { ...order, paymentStatus: newPaymentStatus } : order
           )
         );
-        alert('Payment status updated successfully!');
+        toast.success('Payment status updated successfully!');
       } else {
-        alert('Failed to update payment status');
+        toast.error('Failed to update payment status');
       }
     } catch (error) {
       console.error('Error updating payment status:', error);
-      alert('Error updating payment status');
+      toast.error('Error updating payment status');
     }
   };
 
@@ -146,7 +147,7 @@ export default function SellerOrdersPage() {
 
   const handleUpdateTracking = async () => {
     if (!trackingData.latitude || !trackingData.longitude || !trackingData.deliveryPersonnel.name) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -168,7 +169,7 @@ export default function SellerOrdersPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Tracking information updated successfully!');
+        toast.success('Tracking information updated successfully!');
         setShowTrackingModal(false);
         setTrackingData({
           latitude: '',
@@ -177,11 +178,11 @@ export default function SellerOrdersPage() {
         });
         fetchOrders(); // Refresh orders
       } else {
-        alert('Failed to update tracking: ' + data.message);
+        toast.error('Failed to update tracking: ' + data.message);
       }
     } catch (error) {
       console.error('Error updating tracking:', error);
-      alert('Error updating tracking information');
+      toast.error('Error updating tracking information');
     }
   };
 

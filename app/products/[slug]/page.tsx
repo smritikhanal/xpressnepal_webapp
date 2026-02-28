@@ -38,6 +38,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { normalizeImageUrl } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -156,7 +157,7 @@ export default function ProductDetailPage() {
       } else {
         // Fallback: Copy to clipboard
         await navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
+        toast.success('Link copied to clipboard!');
       }
     } catch (error) {
       console.error('Error sharing:', error);
@@ -184,13 +185,13 @@ export default function ProductDetailPage() {
 
     // Check if user is authenticated
     if (!isAuthenticated) {
-      alert('Please login to submit a review');
+      toast.error('Please login to submit a review');
       return;
     }
 
     // Validation
     if (!reviewComment.trim()) {
-      alert('Please write a review comment');
+      toast.error('Please write a review comment');
       return;
     }
 
@@ -220,14 +221,14 @@ export default function ProductDetailPage() {
         setReviewRating(5);
         // Refresh reviews
         await fetchProductData();
-        alert('Review submitted successfully!');
+        toast.success('Review submitted successfully!');
       } else {
         const error = await response.json();
-        alert(error.message || 'Failed to submit review');
+        toast.error(error.message || 'Failed to submit review');
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review. Please try again.');
+      toast.error('Failed to submit review. Please try again.');
     } finally {
       setSubmittingReview(false);
     }
@@ -238,7 +239,7 @@ export default function ProductDetailPage() {
     if (!product || !product.sellerId || typeof product.sellerId !== 'object') return;
 
     if (!messageSubject.trim() || !messageContent.trim()) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
 
@@ -262,17 +263,17 @@ export default function ProductDetailPage() {
       });
 
       if (response.ok) {
-        alert('Message sent successfully!');
+        toast.success('Message sent successfully!');
         setShowMessageModal(false);
         setMessageSubject('');
         setMessageContent('');
       } else {
         const error = await response.json();
-        alert(error.message || 'Failed to send message');
+        toast.error(error.message || 'Failed to send message');
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      toast.error('Failed to send message. Please try again.');
     } finally {
       setSendingMessage(false);
     }
@@ -663,7 +664,7 @@ export default function ProductDetailPage() {
                         setShowMessageModal(true);
                         setMessageSubject(`Inquiry about: ${product.title}`);
                       } else {
-                        alert('Please login to message the seller');
+                        toast.error('Please login to message the seller');
                       }
                     }}
                   >
@@ -1010,7 +1011,7 @@ export default function ProductDetailPage() {
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!messageContent.trim()) {
-                  alert('Please write a message');
+                  toast.error('Please write a message');
                   return;
                 }
 
@@ -1032,16 +1033,16 @@ export default function ProductDetailPage() {
                   });
 
                   if (response.ok) {
-                    alert('Message sent successfully!');
+                    toast.success('Message sent successfully!');
                     setShowMessageModal(false);
                     setMessageSubject('');
                     setMessageContent('');
                   } else {
-                    alert('Failed to send message');
+                    toast.error('Failed to send message');
                   }
                 } catch (error) {
                   console.error('Error sending message:', error);
-                  alert('An error occurred while sending the message');
+                  toast.error('An error occurred while sending the message');
                 } finally {
                   setSendingMessage(false);
                 }

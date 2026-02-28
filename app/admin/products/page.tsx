@@ -194,11 +194,11 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        ${product.price}
+                        NPR {product.price}
                       </div>
                       {product.discountPrice && (
                         <div className="text-xs text-gray-500 line-through">
-                          ${product.discountPrice}
+                          NPR {product.discountPrice}
                         </div>
                       )}
                     </td>

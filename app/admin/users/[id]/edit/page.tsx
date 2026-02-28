@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import apiClient from '@/lib/api-client';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 const editUserSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -87,7 +88,7 @@ export default function EditUserPage() {
             router.push('/admin/users');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to update user');
+            toast.error(error.response?.data?.message || 'Failed to update user');
         } finally {
             setLoading(false);
         }

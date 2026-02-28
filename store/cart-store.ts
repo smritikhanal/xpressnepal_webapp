@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import toast from 'react-hot-toast';
 
 export interface CartItem {
   productId: {
@@ -69,7 +70,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        alert('Please login to add items to cart');
+        toast.error('Please login to add items to cart');
         return false;
       }
 
@@ -87,12 +88,12 @@ export const useCartStore = create<CartState>()((set, get) => ({
         set({ cart: data.data });
         return true;
       } else {
-        alert(data.message || 'Failed to add item to cart');
+        toast.error(data.message || 'Failed to add item to cart');
         return false;
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
       return false;
     }
   },
@@ -134,7 +135,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
       if (data.success) {
         set({ cart: data.data });
       } else {
-        alert(data.message || 'Failed to update cart');
+        toast.error(data.message || 'Failed to update cart');
       }
     } catch (error) {
       console.error('Error updating cart:', error);
