@@ -47,6 +47,9 @@ export const apiClient = {
 
     resetPassword: (token: string, password: string) =>
       axiosInstance.post<ApiResponse>('/api/auth/reset-password', { token, password }),
+
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      axiosInstance.post<ApiResponse>('/api/auth/change-password', data),
   },
 
   // Product endpoints
