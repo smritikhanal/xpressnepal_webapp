@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import * as z from "zod";
 import Link from "next/link";
 import { useAuthStore } from "@/store/auth-store";
+import { useWishlistStore } from "@/store/wishlist-store";
 import { handleLogin } from "@/lib/actions/auth-action";
 import toast from "react-hot-toast";
 
@@ -25,6 +26,7 @@ export default function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const { setAuth, clearAuth } = useAuthStore();
+  const { mergeGuestWishlist } = useWishlistStore();
 
   // Clear any stale auth state when login page loads
   useEffect(() => {
@@ -46,6 +48,8 @@ export default function LoginForm() {
         const response = await handleLogin(values);
         if (response.success) {
           setAuth(response.data.user, response.data.token);
+          // Merge any guest wishlist items into the DB
+          mergeGuestWishlist();
           toast.success(`Welcome back, ${response.data.user.name}!`);
           
           // Use window.location for reliable redirect after login
