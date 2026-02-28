@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
-import { User, Mail, Phone, MapPin, ShoppingBag, Heart, Lock, LogOut, Store, Upload, Loader2, FileText, LayoutDashboard } from 'lucide-react';
+import { User, Mail, Phone, MapPin, ShoppingBag, Heart, Lock, LogOut, Store, Upload, Loader2, FileText, LayoutDashboard, Plus, Edit2, Trash2, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import apiClient from '@/lib/api-client';
 import Image from 'next/image';
+import { Address } from '@/types';
 
 const profileSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -24,13 +25,187 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
+function SecurityPasswordForm() {
+    const { user } = useAuthStore();
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState('');
+    const [error, setError] = useState('');
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [form, setForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+    });
+
+    const handleChange = (field: keyof typeof form, value: string) => {
+        setForm(prev => ({ ...prev, [field]: value }));
+        setError('');
+        setSuccess('');
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        if (!form.currentPassword) { setError('Current password is required'); return; }
+        if (form.newPassword.length < 6) { setError('New password must be at least 6 characters'); return; }
+        if (form.newPassword !== form.confirmPassword) { setError('New passwords do not match'); return; }
+        if (form.currentPassword === form.newPassword) { setError('New password must differ from current password'); return; }
+
+        setLoading(true);
+        try {
+            const res = await apiClient.auth.changePassword({
+                currentPassword: form.currentPassword,
+                newPassword: form.newPassword,
+            });
+            if (res.data?.success) {
+                setSuccess('Password changed successfully!');
+                setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Failed to change password');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (user?.authProvider && user.authProvider !== 'local') {
+        return (
+            <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border border-gray-100">
+                <Lock className="w-10 h-10 text-gray-400 mb-3" />
+                <p className="font-medium text-gray-700">Password change unavailable</p>
+                <p className="text-sm text-gray-500 mt-1">
+                    You signed in with <span className="font-semibold capitalize">{user.authProvider}</span>. Manage your password via that provider.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="max-w-md space-y-5">
+            {success && (
+                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                    <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <p className="text-sm text-green-700">{success}</p>
+                </div>
+            )}
+            {error && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <Lock className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <p className="text-sm text-red-600">{error}</p>
+                </div>
+            )}
+
+            {/* Current Password */}
+            <div className="space-y-1">
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                        id="currentPassword"
+                        type={showCurrent ? 'text' : 'password'}
+                        value={form.currentPassword}
+                        onChange={e => handleChange('currentPassword', e.target.value)}
+                        className="pl-10 pr-10"
+                        placeholder="Enter current password"
+                        autoComplete="current-password"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowCurrent(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        tabIndex={-1}
+                    >
+                        {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-1">
+                <Label htmlFor="newPassword">New Password</Label>
+                <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                        id="newPassword"
+                        type={showNew ? 'text' : 'password'}
+                        value={form.newPassword}
+                        onChange={e => handleChange('newPassword', e.target.value)}
+                        className="pl-10 pr-10"
+                        placeholder="At least 6 characters"
+                        autoComplete="new-password"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowNew(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        tabIndex={-1}
+                    >
+                        {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                </div>
+                {form.newPassword.length > 0 && form.newPassword.length < 6 && (
+                    <p className="text-xs text-amber-600">Minimum 6 characters required</p>
+                )}
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="space-y-1">
+                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                        id="confirmPassword"
+                        type={showConfirm ? 'text' : 'password'}
+                        value={form.confirmPassword}
+                        onChange={e => handleChange('confirmPassword', e.target.value)}
+                        className={`pl-10 pr-10 ${form.confirmPassword && form.confirmPassword !== form.newPassword ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                        placeholder="Re-enter new password"
+                        autoComplete="new-password"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowConfirm(v => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        tabIndex={-1}
+                    >
+                        {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                </div>
+                {form.confirmPassword && form.newPassword !== form.confirmPassword && (
+                    <p className="text-xs text-red-500">Passwords do not match</p>
+                )}
+                {form.confirmPassword && form.newPassword === form.confirmPassword && form.confirmPassword.length >= 6 && (
+                    <p className="text-xs text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Passwords match</p>
+                )}
+            </div>
+
+            <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+                {loading ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Updating Password...</>
+                ) : (
+                    'Change Password'
+                )}
+            </Button>
+        </form>
+    );
+}
+
 export default function UserProfilePage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, setUser, setAuth, clearAuth } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
-    const [activeTab, setActiveTab] = useState('profile');
+    const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'profile');
     const [showSellerModal, setShowSellerModal] = useState(false);
 
     // Image upload state
@@ -41,6 +216,24 @@ export default function UserProfilePage() {
         shopName: '',
         businessDescription: '',
     });
+
+    // Address state
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [addressLoading, setAddressLoading] = useState(false);
+    const [showAddressForm, setShowAddressForm] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+    const [addressFormData, setAddressFormData] = useState({
+        fullName: '',
+        phone: '',
+        country: 'Nepal',
+        state: '',
+        city: '',
+        street: '',
+        postalCode: '',
+        isDefault: false,
+    });
+    const [addressError, setAddressError] = useState('');
+    const [addressSuccess, setAddressSuccess] = useState('');
 
     const {
         register,
@@ -69,6 +262,26 @@ export default function UserProfilePage() {
             setImagePreview(imgUrl);
         }
     }, [user, router, setValue]);
+
+    const fetchAddresses = async () => {
+        setAddressLoading(true);
+        try {
+            const res = await apiClient.addresses.getAll();
+            if (res.data?.success) {
+                setAddresses(res.data.data?.addresses || res.data.data || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch addresses', err);
+        } finally {
+            setAddressLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'addresses' && user) {
+            fetchAddresses();
+        }
+    }, [activeTab]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -152,6 +365,66 @@ export default function UserProfilePage() {
             console.error('Become seller error:', err);
             setError('An error occurred while upgrading to seller');
             setLoading(false);
+        }
+    };
+
+    const openAddressForm = (addr?: Address) => {
+        if (addr) {
+            setEditingAddress(addr);
+            setAddressFormData({
+                fullName: addr.fullName,
+                phone: addr.phone,
+                country: addr.country,
+                state: addr.state,
+                city: addr.city,
+                street: addr.street,
+                postalCode: addr.postalCode,
+                isDefault: addr.isDefault,
+            });
+        } else {
+            setEditingAddress(null);
+            setAddressFormData({ fullName: '', phone: '', country: 'Nepal', state: '', city: '', street: '', postalCode: '', isDefault: false });
+        }
+        setShowAddressForm(true);
+        setAddressError('');
+        setAddressSuccess('');
+    };
+
+    const handleSaveAddress = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setAddressError('');
+        setAddressSuccess('');
+        setAddressLoading(true);
+        try {
+            if (editingAddress) {
+                const res = await apiClient.addresses.update(editingAddress._id, addressFormData);
+                if (res.data?.success) {
+                    setAddressSuccess('Address updated successfully!');
+                    setShowAddressForm(false);
+                    fetchAddresses();
+                }
+            } else {
+                const res = await apiClient.addresses.add(addressFormData);
+                if (res.data?.success) {
+                    setAddressSuccess('Address added successfully!');
+                    setShowAddressForm(false);
+                    fetchAddresses();
+                }
+            }
+        } catch (err: any) {
+            setAddressError(err.response?.data?.message || 'Failed to save address');
+        } finally {
+            setAddressLoading(false);
+        }
+    };
+
+    const handleDeleteAddress = async (id: string) => {
+        if (!confirm('Delete this address?')) return;
+        try {
+            await apiClient.addresses.delete(id);
+            fetchAddresses();
+        } catch (err) {
+            console.error('Failed to delete address', err);
         }
     };
 
@@ -444,30 +717,142 @@ export default function UserProfilePage() {
                         {/* Addresses Tab */}
                         {activeTab === 'addresses' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                                    Saved Addresses
-                                </h2>
-                                <div className="text-center py-12">
-                                    <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                    <p className="text-gray-600">No saved addresses</p>
-                                    <button className="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                        Add Address
-                                    </button>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-semibold text-gray-900">Saved Addresses</h2>
+                                    {!showAddressForm && (
+                                        <button
+                                            onClick={() => openAddressForm()}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                                        >
+                                            <Plus className="w-4 h-4" /> Add New Address
+                                        </button>
+                                    )}
                                 </div>
+
+                                {addressSuccess && (
+                                    <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+                                        <CheckCircle className="w-4 h-4 text-green-600" />
+                                        <p className="text-sm text-green-600">{addressSuccess}</p>
+                                    </div>
+                                )}
+
+                                {/* Address Form */}
+                                {showAddressForm && (
+                                    <form onSubmit={handleSaveAddress} className="mb-6 p-4 border border-blue-100 bg-blue-50/30 rounded-xl space-y-4">
+                                        <h3 className="font-semibold text-gray-800">{editingAddress ? 'Edit Address' : 'Add New Address'}</h3>
+                                        {addressError && <p className="text-sm text-red-600">{addressError}</p>}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <Label>Full Name *</Label>
+                                                <Input value={addressFormData.fullName} onChange={e => setAddressFormData({ ...addressFormData, fullName: e.target.value })} required />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label>Phone *</Label>
+                                                <Input value={addressFormData.phone} onChange={e => setAddressFormData({ ...addressFormData, phone: e.target.value })} required />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label>Country *</Label>
+                                                <Input value={addressFormData.country} onChange={e => setAddressFormData({ ...addressFormData, country: e.target.value })} required />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label>State / Province *</Label>
+                                                <Input value={addressFormData.state} onChange={e => setAddressFormData({ ...addressFormData, state: e.target.value })} required />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label>City *</Label>
+                                                <Input value={addressFormData.city} onChange={e => setAddressFormData({ ...addressFormData, city: e.target.value })} required />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label>Postal Code</Label>
+                                                <Input value={addressFormData.postalCode} onChange={e => setAddressFormData({ ...addressFormData, postalCode: e.target.value })} />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <Label>Street Address *</Label>
+                                            <Input value={addressFormData.street} onChange={e => setAddressFormData({ ...addressFormData, street: e.target.value })} required />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="checkbox"
+                                                id="isDefault"
+                                                checked={addressFormData.isDefault}
+                                                onChange={e => setAddressFormData({ ...addressFormData, isDefault: e.target.checked })}
+                                                className="w-4 h-4"
+                                            />
+                                            <Label htmlFor="isDefault">Set as default address</Label>
+                                        </div>
+                                        <div className="flex gap-3 pt-2">
+                                            <Button type="submit" disabled={addressLoading} className="bg-blue-600 hover:bg-blue-700">
+                                                {addressLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : 'Save Address'}
+                                            </Button>
+                                            <Button type="button" variant="outline" onClick={() => { setShowAddressForm(false); setEditingAddress(null); }}>
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {/* Address List */}
+                                {addressLoading && !showAddressForm ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                                    </div>
+                                ) : addresses.length === 0 && !showAddressForm ? (
+                                    <div className="text-center py-10">
+                                        <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-gray-500 mb-1 font-medium">No saved addresses yet</p>
+                                        <p className="text-gray-400 text-sm">Add a delivery or shipping address to get started</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {addresses.map((addr) => (
+                                            <div key={addr._id} className={`relative border rounded-xl p-4 ${addr.isDefault ? 'border-blue-400 bg-blue-50/40' : 'border-gray-200'}`}>
+                                                {addr.isDefault && (
+                                                    <span className="absolute top-3 right-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                                        <CheckCircle className="w-3 h-3" /> Default
+                                                    </span>
+                                                )}
+                                                <div className="flex items-start gap-3">
+                                                    <MapPin className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-semibold text-gray-900">{addr.fullName}</p>
+                                                        <p className="text-sm text-gray-600">{addr.phone}</p>
+                                                        <p className="text-sm text-gray-700 mt-1">
+                                                            {addr.street}, {addr.city}, {addr.state}, {addr.country}
+                                                            {addr.postalCode ? ` - ${addr.postalCode}` : ''}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2 mt-3 ml-8">
+                                                    <button
+                                                        onClick={() => openAddressForm(addr)}
+                                                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                                                    >
+                                                        <Edit2 className="w-3 h-3" /> Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteAddress(addr._id)}
+                                                        className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium"
+                                                    >
+                                                        <Trash2 className="w-3 h-3" /> Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* Security Tab */}
                         {activeTab === 'security' && (
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                                <h2 className="text-xl font-semibold text-gray-900 mb-2">
                                     Security Settings
                                 </h2>
-                                <p className="text-gray-600 mb-4">Change your password and manage security preferences.</p>
-                                <div className="text-center py-8 bg-gray-50 rounded-lg">
-                                    <Lock className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-500">Feature currently unavailable</p>
-                                </div>
+                                <p className="text-sm text-gray-500 mb-6">Update your password to keep your account secure.</p>
+
+                                <SecurityPasswordForm />
                             </div>
                         )}
                     </div>
