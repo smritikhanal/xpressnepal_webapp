@@ -272,7 +272,7 @@ export default function Navbar() {
                   height={42}
                   className="object-contain transition-transform duration-300 group-hover:scale-110"
                 />
-                <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
               </div>
               <span className="font-bold text-xl hidden sm:block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 XpressNepal

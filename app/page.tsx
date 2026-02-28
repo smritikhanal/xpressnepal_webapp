@@ -776,7 +776,7 @@ export default function Home() {
                         </div>
                         <CardContent className="p-4">
                           <h3 className="font-bold text-sm line-clamp-1 mb-2 group-hover:text-maroon transition-colors">
-                            {product.title}
+                            {product.title.length > 35 ? `${product.title.substring(0, 35)}...` : product.title}
                           </h3>
                           <div className="flex items-baseline gap-2">
                             <span className="text-lg font-black text-maroon">
