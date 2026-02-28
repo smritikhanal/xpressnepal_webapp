@@ -574,7 +574,7 @@ export default function ProductsPage() {
                               className="w-full bg-primary hover:bg-primary/90 shadow-xl gap-2"
                               onClick={(e) => {
                                 e.preventDefault();
-                                addItem(product, 1);
+                                addItem(product._id, 1);
                               }}
                             >
                               <ShoppingCart className="h-4 w-4" />
