@@ -20,6 +20,7 @@ import {
   Tag,
   X
 } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function CartPage() {
   const { user } = useAuthStore();
@@ -177,7 +178,7 @@ export default function CartPage() {
                         <div className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                           {item.productId.images?.[0] ? (
                             <Image
-                              src={item.productId.images[0]}
+                              src={normalizeImageUrl(item.productId.images[0])}
                               alt={item.productId.title}
                               fill
                               className="object-cover hover:scale-105 transition-transform"

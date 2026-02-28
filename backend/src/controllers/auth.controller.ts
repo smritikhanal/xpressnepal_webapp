@@ -430,3 +430,65 @@ export const resetPassword = async (
     });
   }
 };
+
+/**
+ * @desc    Change password (authenticated)
+ * @route   POST /api/auth/change-password
+ * @access  Private
+ */
+export const changePassword = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters',
+      });
+    }
+
+    const user = await User.findById(req.user?.id).select('+passwordHash');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.authProvider !== 'local') {
+      return res.status(400).json({
+        success: false,
+        message: `You signed in with ${user.authProvider}. Password change is not available.`,
+      });
+    }
+
+    const isMatch = await comparePassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    user.passwordHash = await hashPassword(newPassword);
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    console.error('ChangePassword error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during password change',
+    });
+  }
+};

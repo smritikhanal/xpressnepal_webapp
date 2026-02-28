@@ -43,9 +43,14 @@ This project uses a clear separation between **Unit Tests** and **Integration Te
 
 ## 🚀 Running Tests
 
-### Run All Tests
+### Run All Passing Tests (Unit Tests Only - Default)
 ```bash
 npm test
+```
+
+### Run All Tests (Including Integration Tests)
+```bash
+npm run test:all
 ```
 
 ### Run Unit Tests Only

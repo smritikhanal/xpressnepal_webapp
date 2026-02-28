@@ -49,10 +49,9 @@ export const uploadImage = asyncHandler(async (req: Request, res: Response) => {
         throw new ApiError('No file uploaded', 400);
     }
 
-    // Construct public URL
-    // Assuming server serves 'uploads' folder statically
-    // In production, would likely upload to S3/Cloudinary
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    // Return relative path instead of full URL for environment flexibility
+    // Frontend will construct the full URL using the API base URL
+    const fileUrl = `/uploads/${req.file.filename}`;
 
     sendResponse(res, 200, {
         url: fileUrl,
@@ -74,7 +73,7 @@ export const uploadMultipleImages = asyncHandler(async (req: Request, res: Respo
 
     const files = req.files as Express.Multer.File[];
     const uploadedFiles = files.map(file => ({
-        url: `${req.protocol}://${req.get('host')}/uploads/${file.filename}`,
+        url: `/uploads/${file.filename}`,
         filename: file.filename,
         mimetype: file.mimetype,
         size: file.size,

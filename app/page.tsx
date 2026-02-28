@@ -30,6 +30,7 @@ import {
 import { useState, useEffect, useRef } from "react";
 import { Product, Category } from "@/types";
 import { motion, useScroll, useTransform, useInView, AnimatePresence, Variants } from "framer-motion";
+import { normalizeImageUrl } from "@/lib/utils";
 
 // Animated floating shopping elements for hero
 const FloatingElements = () => {
@@ -761,7 +762,7 @@ export default function Home() {
                           >
                             {product.images && product.images.length > 0 ? (
                               <Image
-                                src={product.images[0]}
+                                src={normalizeImageUrl(product.images[0])}
                                 alt={product.title}
                                 fill
                                 className="object-cover"
@@ -775,7 +776,7 @@ export default function Home() {
                         </div>
                         <CardContent className="p-4">
                           <h3 className="font-bold text-sm line-clamp-1 mb-2 group-hover:text-maroon transition-colors">
-                            {product.title}
+                            {product.title.length > 35 ? `${product.title.substring(0, 35)}...` : product.title}
                           </h3>
                           <div className="flex items-baseline gap-2">
                             <span className="text-lg font-black text-maroon">
@@ -935,7 +936,7 @@ export default function Home() {
                 <div className="relative overflow-hidden flex items-center justify-center rounded-2xl bg-[#F6F7FB] dark:bg-gray-800 h-[270px] mb-4 border border-gray-100 dark:border-gray-700">
                   <Link href={`/products/${product.slug}`} className="flex items-center justify-center w-full h-full">
                     <Image
-                      src={product.images[0] || '/placeholder.png'}
+                      src={normalizeImageUrl(product.images[0] || '/placeholder.png')}
                       alt={product.title}
                       width={250}
                       height={250}

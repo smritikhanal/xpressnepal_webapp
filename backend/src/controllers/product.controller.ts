@@ -9,18 +9,24 @@ import { asyncHandler, sendResponse, getPagination, ApiError } from '../utils/ap
  */
 export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, skip } = getPagination(req.query);
-  const { category, brand, minPrice, maxPrice, search, sort, sellerId } = req.query;
+  const { category, categoryId, brand, minPrice, maxPrice, search, sort, sellerId } = req.query;
 
   // Build filter object
   const filter: Record<string, unknown> = { isActive: true };
 
-  // Filter by seller (for seller dashboard)
+  // Filter by seller (for seller dashboard) - show all products (including inactive)
   if (sellerId) {
     filter.sellerId = sellerId;
+    delete filter.isActive; // Sellers can see their own inactive products too
   }
 
   if (category) {
     filter.categoryId = category;
+  }
+
+  // Also support categoryId query param
+  if (categoryId) {
+    filter.categoryId = categoryId;
   }
 
   if (brand) {

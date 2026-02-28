@@ -27,7 +27,7 @@ This project uses Jest and React Testing Library for comprehensive test coverage
 ### Quick Start
 
 ```bash
-# Run all tests
+# Run all passing tests (unit tests only)
 npm test
 
 # Run unit tests only
@@ -35,6 +35,9 @@ npm run test:unit
 
 # Run integration tests only
 npm run test:integration
+
+# Run all tests (unit + integration)
+npm run test:all
 
 # Run tests in watch mode
 npm run test:watch

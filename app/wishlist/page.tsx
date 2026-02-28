@@ -16,10 +16,16 @@ import {
 } from 'lucide-react';
 import { useWishlistStore } from '@/store/wishlist-store';
 import { useCartStore } from '@/store/cart-store';
+import { normalizeImageUrl } from '@/lib/utils';
+import { useEffect } from 'react';
 
 export default function WishlistPage() {
-  const { items, removeItem, clearWishlist } = useWishlistStore();
+  const { items, removeItem, clearWishlist, fetchWishlist } = useWishlistStore();
   const { addItem } = useCartStore();
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
 
   const handleAddToCart = (product: any) => {
     addItem(product, 1);
@@ -147,53 +153,56 @@ export default function WishlistPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8, y: -20 }}
                 transition={{ delay: index * 0.05 }}
+                className="h-full"
               >
-                <Card className="group overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-white via-white to-orange-50/30 h-full relative">
-                  {/* Remove Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemove(product._id)}
-                  >
-                    <X className="h-4 w-4 text-red-500" />
-                  </Button>
-
+                <Card className="group overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300 bg-white flex flex-col h-full relative">
                   {/* Product Image */}
-                  <Link href={`/products/${product.slug}`}>
-                    <div className="relative aspect-square overflow-hidden">
+                  <Link href={`/products/${product.slug}`} className="relative block">
+                    <div className="relative aspect-square overflow-hidden bg-gray-50">
                       <Image
-                        src={product.images[0]}
+                        src={normalizeImageUrl(product.images?.[0])}
                         alt={product.title}
                         fill
-                        className="object-contain p-4 group-hover:scale-110 transition-transform duration-500"
+                        className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                       />
                       {/* Discount Badge */}
                       {product.discountPrice && (
-                        <Badge className="absolute top-3 left-3 bg-red-500 text-white">
+                        <Badge className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-0.5">
                           {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% OFF
                         </Badge>
                       )}
                     </div>
                   </Link>
 
-                  <CardContent className="p-4 space-y-3">
-                    {/* Brand */}
-                    {product.brand && (
-                      <Badge variant="outline" className="text-xs">
-                        {product.brand}
-                      </Badge>
-                    )}
+                  {/* Remove Button — overlays top-right of image */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-white/90 shadow hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleRemove(product._id)}
+                  >
+                    <X className="h-4 w-4 text-red-500" />
+                  </Button>
 
-                    {/* Title */}
+                  <CardContent className="p-4 flex flex-col flex-1 gap-2">
+                    {/* Brand — fixed height slot */}
+                    <div className="h-5">
+                      {product.brand && (
+                        <Badge variant="outline" className="text-xs">
+                          {product.brand}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Title — always 2-line height */}
                     <Link href={`/products/${product.slug}`}>
-                      <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                      <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-10 hover:text-primary transition-colors">
                         {product.title}
                       </h3>
                     </Link>
 
                     {/* Rating */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (
                           <Star
@@ -211,42 +220,44 @@ export default function WishlistPage() {
                       </span>
                     </div>
 
-                    {/* Price */}
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-primary">
+                    {/* Price — fixed height */}
+                    <div className="flex items-baseline gap-2 min-h-8">
+                      <span className="text-lg font-bold text-primary">
                         NPR {(product.discountPrice || product.price).toLocaleString()}
                       </span>
                       {product.discountPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
+                        <span className="text-xs text-muted-foreground line-through">
                           NPR {product.price.toLocaleString()}
                         </span>
                       )}
                     </div>
 
                     {/* Stock Status */}
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-1.5 text-xs">
                       {product.stock > 0 ? (
                         <>
-                          <div className="h-2 w-2 rounded-full bg-green-500" />
-                          <span className="text-green-600 font-semibold">In Stock</span>
+                          <div className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
+                          <span className="text-green-600 font-medium">In Stock</span>
                         </>
                       ) : (
                         <>
-                          <div className="h-2 w-2 rounded-full bg-red-500" />
-                          <span className="text-red-600 font-semibold">Out of Stock</span>
+                          <div className="h-2 w-2 rounded-full bg-red-500 shrink-0" />
+                          <span className="text-red-600 font-medium">Out of Stock</span>
                         </>
                       )}
                     </div>
 
-                    {/* Add to Cart Button */}
-                    <Button
-                      className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 shadow-md gap-2"
-                      onClick={() => handleAddToCart(product)}
-                      disabled={product.stock === 0}
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      Add to Cart
-                    </Button>
+                    {/* Add to Cart Button — pushed to bottom */}
+                    <div className="mt-auto pt-2">
+                      <Button
+                        className="w-full h-10 rounded-lg bg-primary hover:bg-primary/90 gap-2 text-sm"
+                        onClick={() => handleAddToCart(product)}
+                        disabled={product.stock === 0}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        Add to Cart
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>

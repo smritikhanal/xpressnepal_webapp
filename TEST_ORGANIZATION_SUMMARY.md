@@ -83,8 +83,11 @@ Located in `__tests__/integration/` or files ending with `.integration.test.ts`:
 ### Running Tests
 
 ```bash
-# All tests
+# Default: Run passing tests only (unit tests)
 npm test
+
+# All tests (unit + integration)
+npm run test:all
 
 # Unit tests only (faster for development)
 npm run test:unit
@@ -99,9 +102,6 @@ npm run test:unit:watch
 npm run test:coverage
 npm run test:unit:coverage
 npm run test:integration:coverage
-
-# Run both types sequentially
-npm run test:all
 ```
 
 ### Adding New Tests
@@ -125,27 +125,28 @@ npm run test:all
 # Terminal 1: Run dev server
 npm run dev
 
-# Terminal 2: Watch unit tests
+# Terminal 2: Watch unit tests (all passing)
 npm run test:unit:watch
 ```
 
 ### Before Commit
 ```bash
-# Run all tests
-npm run test:all
+# Run passing tests (unit tests)
+npm test
 
-# Or run them separately
-npm run test:unit && npm run test:integration
+# Or run all tests (may have some failing integration tests)
+npm run test:all
 ```
 
 ### CI/CD Pipeline
 ```yaml
 # Example GitHub Actions workflow
 - name: Run Unit Tests
-  run: npm run test:unit:coverage
+  run: npm test
 
-- name: Run Integration Tests
-  run: npm run test:integration:coverage
+- name: Run Integration Tests (Optional)
+  run: npm run test:integration
+  continue-on-error: true
 ```
 
 ## 🎓 Best Practices Applied

@@ -41,6 +41,15 @@ export const apiClient = {
 
     getMe: () =>
       axiosInstance.get<ApiResponse>('/api/auth/me'),
+
+    forgotPassword: (email: string) =>
+      axiosInstance.post<ApiResponse>('/api/auth/forgot-password', { email }),
+
+    resetPassword: (token: string, password: string) =>
+      axiosInstance.post<ApiResponse>('/api/auth/reset-password', { token, password }),
+
+    changePassword: (data: { currentPassword: string; newPassword: string }) =>
+      axiosInstance.post<ApiResponse>('/api/auth/change-password', data),
   },
 
   // Product endpoints

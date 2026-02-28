@@ -40,7 +40,7 @@ export default function Navbar() {
   const router = useRouter();
   const { isAuthenticated, user, clearAuth } = useAuthStore();
   const { getItemCount, fetchCart, cart } = useCartStore();
-  const { getItemCount: getWishlistCount } = useWishlistStore();
+  const { getItemCount: getWishlistCount, fetchWishlist, items: wishlistItems } = useWishlistStore();
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,12 +55,19 @@ export default function Navbar() {
     }
   }, [isAuthenticated, fetchCart]);
 
+  // Fetch wishlist on mount if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchWishlist();
+    }
+  }, [isAuthenticated, fetchWishlist]);
+
   // Update counts when cart or wishlist changes
   useEffect(() => {
     setCartCount(getItemCount());
     setWishlistCount(getWishlistCount());
     setMounted(true);
-  }, [cart, getItemCount, getWishlistCount]);
+  }, [cart, wishlistItems, getItemCount, getWishlistCount]);
 
   const handleLogout = () => {
     clearAuth();
@@ -189,7 +196,7 @@ export default function Navbar() {
                         </SheetClose>
                         <SheetClose asChild>
                           <Link
-                            href="/addresses"
+                            href="/user/profile?tab=addresses"
                             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
                           >
                             <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
@@ -272,7 +279,7 @@ export default function Navbar() {
                   height={42}
                   className="object-contain transition-transform duration-300 group-hover:scale-110"
                 />
-                <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* <Sparkles className="absolute -top-1 -right-1 h-3 w-3 text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> */}
               </div>
               <span className="font-bold text-xl hidden sm:block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 XpressNepal
@@ -415,7 +422,7 @@ export default function Navbar() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
-                      <Link href="/addresses" className="flex items-center gap-3 py-2">
+                      <Link href="/user/profile?tab=addresses" className="flex items-center gap-3 py-2">
                         <MapPin className="h-4 w-4 text-green-500" />
                         My Addresses
                       </Link>

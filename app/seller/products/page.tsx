@@ -11,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { normalizeImageUrl } from '@/lib/utils';
 
 interface Product {
   _id: string;
@@ -43,6 +45,7 @@ interface Review {
 export default function SellerProductsPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,12 +58,12 @@ export default function SellerProductsPage() {
     try {
       const token = localStorage.getItem('token');
       
-      if (!token || !user?._id) {
+      if (!token || !user?.id) {
         setLoading(false);
         return;
       }
       
-      const response = await fetch(`http://localhost:5000/api/products?sellerId=${user._id}`, {
+      const response = await fetch(`http://localhost:5000/api/products?sellerId=${user.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await response.json();
@@ -81,7 +84,7 @@ export default function SellerProductsPage() {
   useEffect(() => {
     // Add a small delay to allow for auth store hydration
     const timer = setTimeout(() => {
-      if (user?._id) {
+      if (user?.id) {
         fetchProducts();
       } else {
         setLoading(false);
@@ -89,7 +92,7 @@ export default function SellerProductsPage() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [user?._id]);
+  }, [user?.id]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
@@ -103,12 +106,13 @@ export default function SellerProductsPage() {
 
       if (response.ok) {
         setProducts(products.filter((p) => p._id !== id));
+        toast({ title: 'Deleted', description: 'Product deleted successfully' });
       } else {
-        alert('Failed to delete product');
+        toast({ title: 'Error', description: 'Failed to delete product', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert('Error deleting product');
+      toast({ title: 'Error', description: 'Error deleting product', variant: 'destructive' });
     }
   };
 
@@ -182,7 +186,7 @@ export default function SellerProductsPage() {
           <div className="text-center py-12">
             <p className="text-gray-600 mb-4">No products found</p>
             <Link
-              href="/admin/products/create"
+              href="/seller/products/create"
               className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -223,9 +227,10 @@ export default function SellerProductsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <img
-                          src={product.images[0] || '/placeholder.png'}
+                          src={normalizeImageUrl(product.images[0] || '')}
                           alt={product.title}
-                          className="h-10 w-10 rounded-lg object-cover"
+                          className="h-10 w-10 rounded-lg object-cover bg-gray-100"
+                          onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }}
                         />
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">

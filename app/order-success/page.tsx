@@ -20,6 +20,7 @@ import {
   Loader2,
   PartyPopper
 } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/utils';
 
 interface OrderDetails {
   _id: string;
@@ -359,7 +360,7 @@ function OrderSuccessContent() {
                     >
                       <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white flex-shrink-0">
                         <Image
-                          src={item.productId.images[0]}
+                          src={normalizeImageUrl(item.productId.images[0])}
                           alt={item.productId.title}
                           fill
                           className="object-contain p-2"

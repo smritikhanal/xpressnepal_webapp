@@ -37,6 +37,7 @@ import { Product, Review } from '@/types';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -389,7 +390,7 @@ export default function ProductDetailPage() {
                   onClick={() => setIsZoomed(!isZoomed)}
                 >
                   <Image
-                    src={product.images[selectedImage]}
+                    src={normalizeImageUrl(product.images[selectedImage])}
                     alt={`${product.title} - Image ${selectedImage + 1}`}
                     fill
                     className="object-contain p-8"
@@ -455,7 +456,7 @@ export default function ProductDetailPage() {
                     }`}
                   >
                     <Image
-                      src={image}
+                      src={normalizeImageUrl(image)}
                       alt={`Thumbnail ${index + 1}`}
                       fill
                       className="object-contain p-2 bg-white"
@@ -724,16 +725,29 @@ export default function ProductDetailPage() {
                     {product.description}
                   </p>
                   
-                  {product.attributes && Object.keys(product.attributes).length > 0 && (
+                  {product.attributes && Object.keys(product.attributes).some(k => {
+                    const v = (product.attributes as Record<string, unknown>)[k];
+                    return Array.isArray(v) ? v.length > 0 : Boolean(v);
+                  }) && (
                     <div className="mt-8 pt-8 border-t">
                       <h3 className="text-xl font-bold mb-4">Specifications</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.entries(product.attributes).map(([key, value]) => (
-                          <div key={key} className="flex justify-between p-3 bg-gradient-to-r from-orange-50/50 to-transparent rounded-lg">
-                            <span className="font-semibold capitalize">{key}:</span>
-                            <span className="text-muted-foreground">{value}</span>
-                          </div>
-                        ))}
+                        {Object.entries(product.attributes).map(([key, value]) => {
+                          // value can be AttributeOption[] or a string
+                          let displayValue: string;
+                          if (Array.isArray(value)) {
+                            displayValue = value.map((opt: any) => opt.value ?? String(opt)).join(', ');
+                          } else {
+                            displayValue = String(value);
+                          }
+                          if (!displayValue) return null;
+                          return (
+                            <div key={key} className="flex justify-between p-3 bg-gradient-to-r from-orange-50/50 to-transparent rounded-lg">
+                              <span className="font-semibold capitalize">{key}:</span>
+                              <span className="text-muted-foreground">{displayValue}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

@@ -10,6 +10,7 @@ import { useState, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from "@/store/auth-store";
+import { useWishlistStore } from "@/store/wishlist-store";
 import { handleRegister } from "@/lib/actions/auth-action";
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -43,6 +44,7 @@ export default function RegisterForm() {
   const [isPending, startTransition] = useTransition();
   const [accountType, setAccountType] = useState<'customer' | 'seller'>('customer');
   const { setAuth } = useAuthStore();
+  const { mergeGuestWishlist } = useWishlistStore();
 
   const {
     register,
@@ -87,6 +89,8 @@ export default function RegisterForm() {
         
         if (response.success) {
           setAuth(response.data.user, response.data.token);
+          // Merge any guest wishlist items into the DB
+          mergeGuestWishlist();
           // Use window.location for reliable redirect after registration
           if (response.data.user.role === 'seller') {
             window.location.href = '/seller/dashboard';
