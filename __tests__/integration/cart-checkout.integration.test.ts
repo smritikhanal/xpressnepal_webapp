@@ -9,6 +9,14 @@ import { renderHook, act } from '@testing-library/react';
 import { useCartStore } from '@/store/cart-store';
 import { useAuthStore } from '@/store/auth-store';
 import { User } from '@/types';
+import toast from 'react-hot-toast';
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    error: jest.fn(),
+  },
+}));
 
 // Helper to create mock user
 const createMockUser = (overrides: Partial<User> = {}): User => ({
@@ -81,7 +89,6 @@ describe('Cart and Checkout Flow (Integration)', () => {
 
     it('should handle adding item without authentication', async () => {
       const { result } = renderHook(() => useCartStore());
-      const alertMock = jest.spyOn(window, 'alert').mockImplementation();
 
       let success: boolean = true;
       await act(async () => {
@@ -89,8 +96,7 @@ describe('Cart and Checkout Flow (Integration)', () => {
       });
 
       expect(success).toBe(false);
-      expect(alertMock).toHaveBeenCalledWith('Please login to add items to cart');
-      alertMock.mockRestore();
+      expect(toast.error).toHaveBeenCalledWith('Please login to add items to cart');
     });
 
     it('should fetch cart from API', async () => {
