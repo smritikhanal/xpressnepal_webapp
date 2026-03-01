@@ -19,17 +19,22 @@ jest.mock('react-hot-toast', () => ({
 }));
 
 // Helper to create mock user
-const createMockUser = (overrides: Partial<User> = {}): User => ({
-  _id: 'user-123',
-  name: 'Test User',
-  email: 'test@example.com',
-  role: 'customer',
-  isVerified: true,
-  authProvider: 'local',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  ...overrides,
-});
+const createMockUser = (overrides: Partial<User> = {}): User => {
+  const baseId = overrides.id ?? overrides._id ?? 'user-123';
+
+  return {
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'customer',
+    isVerified: true,
+    authProvider: 'local',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+    id: overrides.id ?? baseId,
+    _id: overrides._id ?? baseId,
+  };
+};
 
 describe('Cart and Checkout Flow (Integration)', () => {
   beforeEach(() => {
