@@ -95,6 +95,40 @@ describe('Cart Store', () => {
     );
   });
 
+  it('filters out invalid cart items when product is not populated', async () => {
+    const malformedCart = {
+      _id: 'cart1',
+      userId: 'user1',
+      items: [
+        {
+          productId: 'prod1',
+          quantity: 1,
+          priceAtTime: 100,
+        },
+        {
+          productId: null,
+          quantity: 2,
+          priceAtTime: 200,
+        },
+      ],
+    };
+
+    localStorage.setItem('token', 'test-token');
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      json: async () => ({ success: true, data: malformedCart }),
+    });
+
+    await act(async () => {
+      await useCartStore.getState().fetchCart();
+    });
+
+    expect(useCartStore.getState().cart).toEqual({
+      _id: 'cart1',
+      userId: 'user1',
+      items: [],
+    });
+  });
+
   it('handles fetch cart error gracefully', async () => {
     localStorage.setItem('token', 'test-token');
     (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
