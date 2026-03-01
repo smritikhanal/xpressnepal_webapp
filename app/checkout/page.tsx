@@ -49,7 +49,7 @@ interface Address {
 export default function CheckoutPage() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const { cart, getSubtotal, getTotal } = useCartStore();
+  const { cart, getSubtotal, getTotal, fetchCart } = useCartStore();
   const { toast } = useToast();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -360,6 +360,17 @@ export default function CheckoutPage() {
         // Redirect to order confirmation
         router.push(`/orders/${data.data._id}`);
       } else {
+        if (typeof data.message === 'string' && data.message.includes('no longer available')) {
+          await fetchCart();
+          toast({
+            title: 'Cart updated',
+            description: data.message,
+            variant: 'destructive',
+          });
+          router.push('/cart');
+          return;
+        }
+
         toast({
           title: 'Error',
           description: data.message || 'Failed to place order',
