@@ -17,17 +17,17 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   const { shippingAddressId, paymentMethod, deliveryDate, deliveryTimeSlot } = req.body;
 
   interface PopulatedProduct {
-  _id: mongoose.Types.ObjectId;
-  title: string;
-  price: number;
-  discountPrice?: number;
-  stock: number;
-}
+    _id: mongoose.Types.ObjectId;
+    title: string;
+    price: number;
+    discountPrice?: number;
+    stock: number;
+  }
 
-interface ICartItem {
-  productId: mongoose.Types.ObjectId | PopulatedProduct;
-  quantity: number;
-}
+  interface ICartItem {
+    productId: PopulatedProduct | null;
+    quantity: number;
+  }
 
   // Fetch the shipping address
   const address = await Address.findOne({
@@ -51,41 +51,64 @@ interface ICartItem {
   };
 
   // Get user's cart
-const cart = await Cart.findOne({ userId: req.user?.id })
-  .populate<{ items: { productId: PopulatedProduct; quantity: number }[] }>('items.productId');
+  const cart = await Cart.findOne({ userId: req.user?.id })
+    .populate<{ items: ICartItem[] }>('items.productId', 'title price discountPrice stock');
 
   if (!cart || cart.items.length === 0) {
     throw new ApiError('Cart is empty', 400);
+  }
+
+  // Validate cart products (populate can return null for deleted/unavailable products)
+  const validItems: { product: PopulatedProduct; quantity: number }[] = [];
+  let hasInvalidItems = false;
+
+  for (const item of cart.items) {
+    const product = item.productId;
+
+    if (!product) {
+      hasInvalidItems = true;
+      continue;
+    }
+
+    if (product.stock < item.quantity) {
+      throw new ApiError(`Insufficient stock for ${product.title}`, 400);
+    }
+
+    validItems.push({
+      product,
+      quantity: item.quantity,
+    });
+  }
+
+  if (hasInvalidItems) {
+    cart.items = cart.items.filter((item: ICartItem) => !!item.productId) as typeof cart.items;
+    await cart.save();
+    throw new ApiError(
+      'Some products in your cart are no longer available and were removed. Please review your cart and place the order again.',
+      400
+    );
   }
 
   // Build order items and calculate total
   const orderItems = [];
   let totalAmount = 0;
 
-  for (const item of cart.items) {
-  const product = item.productId;
+  for (const item of validItems) {
+    const price = item.product.discountPrice ?? item.product.price;
 
-  const quantity = item.quantity; 
+    orderItems.push({
+      productId: item.product._id,
+      title: item.product.title,
+      quantity: item.quantity,
+      price,
+    });
 
- if (product.stock < quantity) {
-    throw new ApiError(`Insufficient stock for ${product.title}`, 400);
+    totalAmount += price * item.quantity;
+
+    await Product.findByIdAndUpdate(item.product._id, {
+      $inc: { stock: -item.quantity },
+    });
   }
-
-  const price = product.discountPrice ?? product.price;
-
-  orderItems.push({
-    productId: product._id, // already ObjectId
-    title: product.title,
-    quantity: item.quantity,
-    price,
-  });
-
-  totalAmount += price * item.quantity;
-
-  await Product.findByIdAndUpdate(product._id, {
-    $inc: { stock: -item.quantity },
-  });
-}
 
   // Create order
   const order = await Order.create({
