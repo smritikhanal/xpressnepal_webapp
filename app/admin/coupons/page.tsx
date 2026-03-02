@@ -27,7 +27,7 @@ import {
   Edit, 
   Tag, 
   Percent,
-  DollarSign,
+  Coins,
   Calendar,
   Users,
   CheckCircle,
@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import toast from 'react-hot-toast';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 
 interface Coupon {
   _id: string;
@@ -63,6 +64,9 @@ export default function CouponsPage() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -134,11 +138,17 @@ export default function CouponsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this coupon?')) return;
+  const openDeleteDialog = (coupon: Coupon) => {
+    setSelectedCoupon(coupon);
+    setIsDeleteDialogOpen(true);
+  };
 
+  const handleDelete = async () => {
+    if (!selectedCoupon?._id) return;
+
+    setIsDeleting(true);
     try {
-      const response = await fetch(`${API_BASE}/api/coupons/${id}`, {
+      const response = await fetch(`${API_BASE}/api/coupons/${selectedCoupon._id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -149,12 +159,17 @@ export default function CouponsPage() {
 
       if (data.success) {
         await fetchCoupons();
+        toast.success('Coupon deleted successfully');
+        setIsDeleteDialogOpen(false);
+        setSelectedCoupon(null);
       } else {
         toast.error(data.message || 'Failed to delete coupon');
       }
     } catch (error) {
       console.error('Failed to delete coupon:', error);
       toast.error('Failed to delete coupon');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -451,7 +466,7 @@ export default function CouponsPage() {
                           </>
                         ) : (
                           <>
-                            <DollarSign className="h-3 w-3" />
+                            <Coins className="h-3 w-3" />
                             NPR {coupon.discountValue}
                           </>
                         )}
@@ -503,7 +518,7 @@ export default function CouponsPage() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDelete(coupon._id)}
+                          onClick={() => openDeleteDialog(coupon)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -516,6 +531,20 @@ export default function CouponsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmActionDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          setIsDeleteDialogOpen(open);
+          if (!open) setSelectedCoupon(null);
+        }}
+        title="Delete Coupon"
+        description={`Are you sure you want to delete coupon ${selectedCoupon?.code ? `"${selectedCoupon.code}"` : ''}? This action cannot be undone.`}
+        confirmText="Delete"
+        onConfirm={handleDelete}
+        isLoading={isDeleting}
+        confirmVariant="destructive"
+      />
     </div>
   );
 }
