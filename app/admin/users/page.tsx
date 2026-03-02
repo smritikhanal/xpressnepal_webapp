@@ -11,10 +11,11 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { ConfirmActionDialog } from '@/components/ui/confirm-action-dialog';
 
 interface User {
     _id: string;
@@ -27,17 +28,25 @@ interface User {
 export default function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [limit] = useState(5);
     const [totalPages, setTotalPages] = useState(1);
     const [totalUsers, setTotalUsers] = useState(0);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
         const fetchUsers = async () => {
             setLoading(true);
             try {
-                const response = await apiClient.adminUsers.getAll({ page, limit });
+                const response = await apiClient.adminUsers.getAll({
+                    page,
+                    limit,
+                    search: searchTerm.trim() || undefined,
+                });
                 console.log('Users response:', response.data);
                 if (response.data.success) {
                     setUsers(Array.isArray(response.data.data) ? response.data.data : []);
@@ -52,15 +61,43 @@ export default function AdminUsersPage() {
             }
         };
         fetchUsers();
-    }, [page, limit]);
+    }, [page, limit, searchTerm]);
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this user?')) return;
+    const openDeleteDialog = (user: User) => {
+        setSelectedUser(user);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDelete = async () => {
+        if (!selectedUser?._id) return;
+
+        setIsDeleting(true);
         try {
-            await apiClient.adminUsers.delete(id);
-            setUsers(users.filter(u => u._id !== id));
-        } catch (error) {
+            await apiClient.adminUsers.delete(selectedUser._id);
+            toast.success('User deleted successfully');
+
+            // Refetch paginated data to keep totals/pages accurate
+            if (users.length === 1 && page > 1) {
+                setPage(page - 1);
+            } else {
+                const response = await apiClient.adminUsers.getAll({
+                    page,
+                    limit,
+                    search: searchTerm.trim() || undefined,
+                });
+                if (response.data.success) {
+                    setUsers(Array.isArray(response.data.data) ? response.data.data : []);
+                    setTotalPages(response.data.pages || 1);
+                    setTotalUsers(response.data.total || 0);
+                }
+            }
+
+            setIsDeleteDialogOpen(false);
+            setSelectedUser(null);
+        } catch {
             toast.error('Failed to delete user');
+        } finally {
+            setIsDeleting(false);
         }
     }
 
@@ -80,6 +117,20 @@ export default function AdminUsersPage() {
                         <Plus className="mr-2 h-4 w-4" /> Add User
                     </Button>
                 </Link>
+            </div>
+
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                    type="text"
+                    placeholder="Search users by name or email..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setPage(1);
+                        setSearchTerm(e.target.value);
+                    }}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                />
             </div>
 
             <div className="border rounded-lg bg-white shadow-xs">
@@ -121,7 +172,7 @@ export default function AdminUsersPage() {
                                         <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/users/${user._id}/edit`)}>
                                             <Edit className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(user._id)}>
+                                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => openDeleteDialog(user)}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
@@ -139,6 +190,20 @@ export default function AdminUsersPage() {
                     </div>
                 </div>
             </div>
-           </div> 
+
+            <ConfirmActionDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open);
+                    if (!open) setSelectedUser(null);
+                }}
+                title="Delete User"
+                description={`Are you sure you want to delete ${selectedUser?.name || 'this user'}? This action cannot be undone.`}
+                confirmText="Delete"
+                onConfirm={handleDelete}
+                isLoading={isDeleting}
+                confirmVariant="destructive"
+            />
+           </div>
     );
 }

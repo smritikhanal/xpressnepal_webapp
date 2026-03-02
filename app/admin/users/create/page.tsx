@@ -61,6 +61,7 @@ export default function CreateUserPage() {
             if (imageFile) formData.append('image', imageFile);
 
             await apiClient.adminUsers.create(formData);
+            toast.success(`User "${data.name}" created successfully!`);
             router.push('/admin/users');
         } catch (error: any) {
             console.error(error);
