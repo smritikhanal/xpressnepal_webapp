@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,10 +24,12 @@ import {
   List,
   Zap,
   CheckCircle2,
+  Eye,
 } from 'lucide-react';
 import { Product, Category } from '@/types';
 import { useCartStore } from '@/store/cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
+import { useToast } from '@/hooks/use-toast';
 import { normalizeImageUrl } from '@/lib/utils';
 
 const SORT_OPTIONS = [
@@ -37,6 +40,8 @@ const SORT_OPTIONS = [
 ];
 
 export default function ProductsPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,16 +102,34 @@ export default function ProductsPage() {
     } catch {}
   };
 
-  const handleAddToCart = async (e: React.MouseEvent, productId: string) => {
+  const handleAddToCart = async (e: React.MouseEvent, productId: string, productTitle: string) => {
     e.preventDefault();
-    await addItem(productId, 1);
-    setAddedId(productId);
-    setTimeout(() => setAddedId(null), 1800);
+    const success = await addItem(productId, 1);
+    if (success) {
+      toast({
+        title: 'Added to cart',
+        description: `${productTitle} has been added to your cart`,
+      });
+      setAddedId(productId);
+      setTimeout(() => setAddedId(null), 1800);
+    }
   };
 
-  const handleWishlist = (e: React.MouseEvent, product: Product) => {
+  const handleWishlist = async (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
-    isInWishlist(product._id) ? removeFromWishlist(product._id) : addToWishlist(product);
+    if (isInWishlist(product._id)) {
+      await removeFromWishlist(product._id);
+      toast({
+        title: 'Removed from wishlist',
+        description: `${product.title} has been removed from your wishlist`,
+      });
+    } else {
+      await addToWishlist(product);
+      toast({
+        title: 'Added to wishlist',
+        description: `${product.title} has been added to your wishlist`,
+      });
+    }
   };
 
   const activeFilterCount = useMemo(() => {
@@ -261,7 +284,7 @@ export default function ProductsPage() {
               >
                 <div className="pt-4 mt-4 border-t border-gray-100 flex flex-wrap items-center gap-4">
                   {/* In Stock */}
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                  {/* <label className="flex items-center gap-2 cursor-pointer select-none">
                     <div
                       onClick={() => { setInStockOnly(!inStockOnly); setPage(1); }}
                       className={`w-10 h-5 rounded-full transition-colors relative ${inStockOnly ? 'bg-primary' : 'bg-gray-200'}`}
@@ -269,7 +292,7 @@ export default function ProductsPage() {
                       <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${inStockOnly ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </div>
                     <span className="text-sm font-medium text-gray-700">In Stock Only</span>
-                  </label>
+                  </label> */}
 
                   {/* Active filter chips */}
                   {activeFilterCount > 0 && (
@@ -392,7 +415,7 @@ export default function ProductsPage() {
                                   )}
                                 </div>
                                 <button
-                                  onClick={(e) => handleAddToCart(e, product._id)}
+                                  onClick={(e) => handleAddToCart(e, product._id, product.title)}
                                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
                                     justAdded
                                       ? 'bg-green-500 text-white'
@@ -437,15 +460,6 @@ export default function ProductsPage() {
                                 <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Out of Stock</span>
                               </div>
                             )}
-                            {/* Wishlist */}
-                            <button
-                              onClick={(e) => handleWishlist(e, product)}
-                              className={`absolute top-2.5 right-2.5 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-sm transition-all opacity-0 group-hover:opacity-100 ${
-                                wishlisted ? 'bg-red-50 opacity-100' : 'bg-white'
-                              }`}
-                            >
-                              <Heart className={`h-4 w-4 transition-colors ${wishlisted ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-                            </button>
 
                             {/* Product image */}
                             {product.images?.[0] ? (
@@ -461,20 +475,37 @@ export default function ProductsPage() {
                               </div>
                             )}
 
-                            {/* Quick add overlay */}
-                            <div className="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                            {/* Hover Action Buttons */}
+                            <div className="absolute left-0 bottom-0 translate-y-full w-full flex items-center justify-center gap-2.5 pb-5 transition-transform duration-300 ease-out group-hover:translate-y-0">
+                              {/* Quick View Button */}
                               <button
-                                onClick={(e) => handleAddToCart(e, product._id)}
-                                className={`w-full h-9 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-lg transition-all ${
-                                  justAdded
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-gray-900 text-white hover:bg-primary'
-                                }`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  router.push(`/products/${product.slug}`);
+                                }}
+                                aria-label="Quick view"
+                                className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-maroon dark:hover:text-maroon transition-colors duration-200"
                               >
-                                {justAdded
-                                  ? <><CheckCircle2 className="h-4 w-4" /> Added to Cart</>
-                                  : <><ShoppingCart className="h-4 w-4" /> Quick Add</>
-                                }
+                                <Eye className="w-5 h-5" />
+                              </button>
+
+                              {/* Add to Cart Button */}
+                              <button
+                                onClick={(e) => handleAddToCart(e, product._id, product.title)}
+                                disabled={product.stock === 0}
+                                className="inline-flex items-center font-medium text-sm py-2.5 px-5 rounded-full bg-maroon text-white hover:bg-maroon/90 transition-colors duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <ShoppingCart className="w-4 h-4 mr-2" />
+                                {product.stock === 0 ? 'Out of Stock' : 'Add to cart'}
+                              </button>
+
+                              {/* Favorite Button */}
+                              <button
+                                onClick={(e) => handleWishlist(e, product)}
+                                aria-label="Add to wishlist"
+                                className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-pink-500 transition-colors duration-200"
+                              >
+                                <Heart className={`w-5 h-5 ${wishlisted ? 'fill-pink-500 text-pink-500' : ''}`} />
                               </button>
                             </div>
                           </div>

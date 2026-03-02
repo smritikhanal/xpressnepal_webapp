@@ -48,6 +48,7 @@ export const getInbox = async (req: Request, res: Response) => {
 
     const messages = await Message.find(query)
       .populate('senderId', 'name email shopName')
+      .populate('receiverId', 'name email shopName')
       .populate('productId', 'title slug')
       .sort({ createdAt: -1 });
 
@@ -70,6 +71,7 @@ export const getSentMessages = async (req: Request, res: Response) => {
     const userId = req.user.id;
 
     const messages = await Message.find({ senderId: userId })
+      .populate('senderId', 'name email shopName')
       .populate('receiverId', 'name email shopName')
       .populate('productId', 'title slug')
       .sort({ createdAt: -1 });

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getUsers, getUserById, createUser, updateUser, deleteUser } from '../controllers/admin.controller.js';
+import { getUsers, getUserById, createUser, updateUser, deleteUser, getStoreSettings, updateStoreSettings } from '../controllers/admin.controller.js';
 import { protect, requireSuperAdmin } from '../middleware/auth.middleware.js';
 import { upload } from '../middleware/upload.middleware.js';
 
@@ -17,5 +17,9 @@ router.route('/users/:id')
     .get(getUserById)
     .put(upload.single('image'), updateUser)
     .delete(deleteUser);
+
+router.route('/store-settings')
+    .get(getStoreSettings)
+    .put(updateStoreSettings);
 
 export default router;

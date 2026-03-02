@@ -6,14 +6,26 @@ import {
   TrendingUp,
   Package,
   ShoppingCart,
-  DollarSign,
+  Coins,
   ArrowUpRight,
   ArrowDownRight,
   Eye,
+  BarChart3,
   Star,
   MessageSquare,
 } from 'lucide-react';
-import { set } from 'mongoose';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 interface SellerStats {
   totalRevenue: number;
@@ -25,13 +37,10 @@ interface SellerStats {
   pendingOrders: number;
 }
 
-interface RecentOrder {
-  id: string;
-  customer: string;
-  product: string;
-  amount: number;
-  status: string;
+interface AnalyticsData {
   date: string;
+  revenue: number;
+  orders: number;
 }
 
 interface Review {
@@ -59,7 +68,7 @@ export default function SellerDashboardPage() {
     ordersChange: 0,
     pendingOrders: 0,
   });
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
   const [recentReviews, setRecentReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,32 +108,98 @@ export default function SellerDashboardPage() {
       
       // Calculate stats
       const products = productsData.success ? productsData.data.products : [];
-      const orders = ordersData.success && Array.isArray(ordersData.data) ? ordersData.data : [];
+      const orders = ordersData.success && ordersData.data?.orders 
+        ? ordersData.data.orders 
+        : [];
+      
+      console.log('📦 Products count:', products.length);
+      console.log('🛒 Orders count:', orders.length);
+      
+      // Calculate current month stats
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      
+      // Current month data
+      const currentMonthOrders = orders.filter((order: any) => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+      });
+      
+      const currentMonthRevenue = currentMonthOrders.reduce((sum: number, order: any) => 
+        sum + (order.totalAmount || 0), 0);
+      
+      // Last month data
+      const lastMonthOrders = orders.filter((order: any) => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate.getMonth() === lastMonth && orderDate.getFullYear() === lastMonthYear;
+      });
+      
+      const lastMonthRevenue = lastMonthOrders.reduce((sum: number, order: any) => 
+        sum + (order.totalAmount || 0), 0);
+      
+      // Calculate percentage changes
+      const revenueChange = lastMonthRevenue > 0 
+        ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100) 
+        : currentMonthRevenue > 0 ? 100 : 0;
+      
+      const ordersChange = lastMonthOrders.length > 0
+        ? ((currentMonthOrders.length - lastMonthOrders.length) / lastMonthOrders.length * 100)
+        : currentMonthOrders.length > 0 ? 100 : 0;
       
       const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
-      const pendingOrders = orders.filter((order: any) => order.status === 'pending' || order.status === 'processing').length;
+      const pendingOrders = orders.filter((order: any) => 
+        order.orderStatus === 'pending' || order.orderStatus === 'placed' || order.orderStatus === 'confirmed'
+      ).length;
       
       setStats({
         totalRevenue,
-        revenueChange: 12.5,
+        revenueChange: parseFloat(revenueChange.toFixed(1)),
         totalProducts: products.length,
-        productsChange: 8.3,
+        productsChange: 0, // Products don't have timestamps
         totalOrders: orders.length,
-        ordersChange: 15.2,
+        ordersChange: parseFloat(ordersChange.toFixed(1)),
         pendingOrders,
       });
 
-      // Set recent orders (last 5)
-      const recent = orders.slice(0, 5).map((order: any) => ({
-        id: order._id,
-        customer: order.userId?.name || 'Guest',
-        product: order.items?.[0]?.productId?.title || 'Multiple items',
-        amount: order.totalAmount,
-        status: order.status,
-        date: new Date(order.createdAt).toLocaleDateString(),
-      }));
+      // Generate analytics data for the last 14 days
+      const analyticsMap = new Map<string, { revenue: number; orders: number }>();
       
-      setRecentOrders(recent);
+      // Initialize last 14 days
+      for (let i = 13; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        analyticsMap.set(dateKey, { revenue: 0, orders: 0 });
+      }
+      
+      // Populate with actual order data
+      orders.forEach((order: any) => {
+        const orderDate = new Date(order.createdAt);
+        const daysDiff = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff >= 0 && daysDiff < 14) {
+          const dateKey = orderDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const existing = analyticsMap.get(dateKey);
+          if (existing) {
+            existing.revenue += order.totalAmount || 0;
+            existing.orders += 1;
+          }
+        }
+      });
+      
+      // Convert to array for chart
+      const analyticsArray: AnalyticsData[] = Array.from(analyticsMap.entries()).map(
+        ([date, data]) => ({
+          date,
+          revenue: Math.round(data.revenue),
+          orders: data.orders,
+        })
+      );
+      
+      setAnalyticsData(analyticsArray);
 
       // Fetch reviews for seller's products
       if (products.length > 0) {
@@ -133,19 +208,19 @@ export default function SellerDashboardPage() {
           fetch(`http://localhost:5000/api/reviews?productId=${id}`)
             .then(res => res.json())
             .then(data => data.data?.reviews || [])
-         .catch(error => {
-            console.error('Error fetching reviews for product:', error);
-            return [];
-          })
+            .catch(error => {
+              console.error('Error fetching reviews for product:', error);
+              return [];
+            })
         );
         
         const allReviewsArrays = await Promise.all(reviewsPromises);
         const allReviews = allReviewsArrays.flat();
         
-        // Sort by date and take latest 5
+        // Sort by date and take latest 2
         const sortedReviews = allReviews
           .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 5);
+          .slice(0, 2);
         
         setRecentReviews(sortedReviews);
       }
@@ -177,7 +252,7 @@ export default function SellerDashboardPage() {
       title: 'Total Revenue',
       value: `NPR ${stats.totalRevenue.toLocaleString()}`,
       change: stats.revenueChange,
-      icon: DollarSign,
+      icon: Coins,
       color: 'bg-green-500',
     },
     {
@@ -195,28 +270,13 @@ export default function SellerDashboardPage() {
       color: 'bg-purple-500',
     },
     {
-      title: 'Customer Reviews',
-      value: recentReviews.length.toLocaleString(),
+      title: 'Pending Orders',
+      value: stats.pendingOrders.toLocaleString(),
       change: 0,
-      icon: Star,
+      icon: TrendingUp,
       color: 'bg-orange-500',
     },
   ];
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   if (loading) {
     return (
@@ -286,71 +346,97 @@ export default function SellerDashboardPage() {
         })}
       </div>
 
-      {/* Recent Orders */}
+      {/* Sales Analytics Chart */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Recent Orders
-          </h2>
-          <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-            View All
-          </button>
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900">
+              Sales Analytics (Last 14 Days)
+            </h2>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Product
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {order.customer}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {order.product}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${order.amount.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.date}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="p-6">
+          {analyticsData.length === 0 ? (
+            <div className="text-center py-8">
+              <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600">No sales data yet</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Sales analytics will appear here once you receive orders
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Revenue Chart */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Revenue Trend</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={analyticsData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }}
+                      stroke="#9ca3af"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      stroke="#9ca3af"
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                      formatter={(value: number) => [`NPR ${value.toLocaleString()}`, 'Revenue']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      dot={{ fill: '#10b981', r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Orders Chart */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Orders Trend</h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={analyticsData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="date" 
+                      tick={{ fontSize: 12 }}
+                      stroke="#9ca3af"
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      stroke="#9ca3af"
+                    />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        fontSize: '12px'
+                      }}
+                      formatter={(value: number) => [value, 'Orders']}
+                    />
+                    <Bar 
+                      dataKey="orders" 
+                      fill="#8b5cf6" 
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -364,7 +450,7 @@ export default function SellerDashboardPage() {
             </h2>
           </div>
           <button 
-            onClick={() => window.location.href = '/seller/products'}
+            onClick={() => window.location.href = '/seller/reviews'}
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
             View All

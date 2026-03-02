@@ -1,13 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/auth-store';
 import Link from 'next/link';
 import {
-  ShoppingCart,
-  Search,
   Eye,
-  Package,
 } from 'lucide-react';
 
 interface Order {
@@ -16,7 +12,14 @@ interface Order {
     name: string;
     email: string;
   };
-  items: Array<{
+  items?: Array<{
+    productId: {
+      title: string;
+    };
+    quantity: number;
+    price: number;
+  }>;
+  orderItems?: Array<{
     productId: {
       title: string;
     };
@@ -24,6 +27,7 @@ interface Order {
     price: number;
   }>;
   totalAmount: number;
+  orderStatus?: string;
   status?: string;
   paymentStatus?: string;
   createdAt: string;
@@ -33,10 +37,6 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
 
   const fetchOrders = async () => {
     try {
@@ -60,6 +60,11 @@ export default function AdminOrdersPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOrders();
+  }, []);
 
   const getStatusColor = (status: string | undefined) => {
     if (!status) return 'bg-gray-100 text-gray-800';
@@ -85,6 +90,18 @@ export default function AdminOrdersPage() {
     order.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const getOrderItemsCount = (order: Order) => {
+    if (Array.isArray(order.orderItems)) {
+      return order.orderItems.length;
+    }
+
+    if (Array.isArray(order.items)) {
+      return order.items.length;
+    }
+
+    return 0;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -105,116 +122,88 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search orders by ID or customer name..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      </div>
+      {/* Orders List */}
+      <div className="space-y-4">
+        {filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+            <p className="text-gray-600">No orders found</p>
+          </div>
+        ) : (
+          filteredOrders.map((order) => (
+            <div key={order._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              {/* Order Header */}
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-4 pb-4 border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Order #{order._id.slice(-8)}</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date(order.createdAt).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+                <Link
+                  href={`/admin/orders/${order._id}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  View Details
+                </Link>
+              </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Items
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Payment
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOrders.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                    No orders found
-                  </td>
-                </tr>
-              ) : (
-                filteredOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{order._id.slice(-8)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {order.userId?.name || 'N/A'}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {order.userId?.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                      {order.items?.length || 0} items
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${order.totalAmount?.toFixed(2) || '0.00'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                          order.status
-                        )}`}
-                      >
-                        {order.status || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          order.paymentStatus === 'paid'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {order.paymentStatus || 'N/A'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        href={`/admin/orders/${order._id}`}
-                        className="text-blue-600 hover:text-blue-900"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              {/* Order Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Customer Info */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Customer</p>
+                  <p className="text-sm font-semibold text-gray-900">{order.userId?.name || 'N/A'}</p>
+                  <p className="text-xs text-gray-600">{order.userId?.email}</p>
+                </div>
+
+                {/* Items */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Items</p>
+                  <p className="text-sm font-semibold text-gray-900">{getOrderItemsCount(order)} items</p>
+                </div>
+
+                {/* Total Amount */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Total Amount</p>
+                  <p className="text-lg font-bold text-gray-900">NPR {order.totalAmount?.toFixed(2) || '0.00'}</p>
+                </div>
+
+                {/* Status */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Order Status</p>
+                  <span
+                    className={`px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                      order.orderStatus || order.status
+                    )}`}
+                  >
+                    {order.orderStatus || order.status || 'N/A'}
+                  </span>
+                </div>
+
+                {/* Payment Status */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Payment Status</p>
+                  <span
+                    className={`px-3 py-1.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      order.paymentStatus === 'paid'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}
+                  >
+                    {order.paymentStatus || 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

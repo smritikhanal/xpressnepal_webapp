@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/User.js';
+import StoreSettings from '../models/StoreSettings.js';
 import bcrypt from 'bcrypt';
 
 /**
@@ -12,11 +13,27 @@ export const getUsers = async (req: Request, res: Response) => {
         // Pagination params
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 10;
+        const search = (req.query.search as string | undefined)?.trim();
+        const role = req.query.role as string | undefined;
         const skip = (page - 1) * limit;
 
-        const total = await User.countDocuments();
-        const users = await User.find()
+        const query: Record<string, unknown> = {};
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        if (role && ['customer', 'seller', 'superadmin'].includes(role)) {
+            query.role = role;
+        }
+
+        const total = await User.countDocuments(query);
+        const users = await User.find(query)
             .select('-passwordHash')
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
 
@@ -197,6 +214,74 @@ export const deleteUser = async (req: Request, res: Response) => {
         res.status(500).json({
             success: false,
             message: 'Server Error',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+};
+
+/**
+ * Get store settings
+ * @route GET /api/admin/store-settings
+ * @access Private/SuperAdmin
+ */
+export const getStoreSettings = async (_req: Request, res: Response) => {
+    try {
+        let settings = await StoreSettings.findOne();
+
+        if (!settings) {
+            settings = await StoreSettings.create({});
+        }
+
+        res.status(200).json({
+            success: true,
+            data: settings,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch store settings',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+};
+
+/**
+ * Update store settings
+ * @route PUT /api/admin/store-settings
+ * @access Private/SuperAdmin
+ */
+export const updateStoreSettings = async (req: Request, res: Response) => {
+    try {
+        const { storeName, storeEmail, storePhone, currency, timezone } = req.body;
+
+        const updatePayload = {
+            storeName: storeName?.trim(),
+            storeEmail: storeEmail?.trim()?.toLowerCase(),
+            storePhone: storePhone?.trim(),
+            currency,
+            timezone: timezone?.trim(),
+        };
+
+        const settings = await StoreSettings.findOneAndUpdate(
+            {},
+            { $set: updatePayload },
+            {
+                new: true,
+                upsert: true,
+                runValidators: true,
+                setDefaultsOnInsert: true,
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Store settings updated successfully',
+            data: settings,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update store settings',
             error: error instanceof Error ? error.message : 'Unknown error',
         });
     }

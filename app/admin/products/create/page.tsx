@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/auth-store';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import AttributeInput from '@/components/admin/AttributeInput';
+import { normalizeImageUrl } from '@/lib/utils';
 import { AttributeOption, ProductAttributes } from '@/types';
 
 interface Category {
@@ -16,7 +16,6 @@ interface Category {
 
 export default function CreateProductPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -111,7 +110,7 @@ export default function CreateProductPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const uploadedUrls = data.data.files.map((file: any) => file.url);
+        const uploadedUrls = data.data.files.map((file: { url: string }) => file.url);
         setFormData({
           ...formData,
           images: [...formData.images, ...uploadedUrls],
@@ -143,6 +142,9 @@ export default function CreateProductPage() {
     if (!formData.slug.trim()) newErrors.slug = 'Slug is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.price || parseFloat(formData.price) <= 0) newErrors.price = 'Valid price is required';
+    if (formData.discountPrice && parseFloat(formData.discountPrice) > parseFloat(formData.price)) {
+      newErrors.discountPrice = 'Discount amount cannot be greater than price';
+    }
     if (!formData.categoryId) newErrors.categoryId = 'Category is required';
     if (!formData.stock || parseInt(formData.stock) < 0) newErrors.stock = 'Valid stock quantity is required';
 
@@ -170,7 +172,9 @@ export default function CreateProductPage() {
           slug: formData.slug,
           description: formData.description,
           price: parseFloat(formData.price),
-          discountPrice: formData.discountPrice ? parseFloat(formData.discountPrice) : undefined,
+          discountPrice: formData.discountPrice
+            ? Math.max(parseFloat(formData.price) - parseFloat(formData.discountPrice), 0)
+            : undefined,
           categoryId: formData.categoryId,
           brand: formData.brand || undefined,
           images: formData.images,
@@ -286,7 +290,7 @@ export default function CreateProductPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price * ($)
+                  Price * (NPR)
                 </label>
                 <input
                   type="number"
@@ -307,7 +311,7 @@ export default function CreateProductPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Discount Price ($)
+                  Discount Amount (NPR)
                 </label>
                 <input
                   type="number"
@@ -319,6 +323,9 @@ export default function CreateProductPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="0.00"
                 />
+                {errors.discountPrice && (
+                  <p className="mt-1 text-sm text-red-600">{errors.discountPrice}</p>
+                )}
               </div>
             </div>
 
@@ -484,7 +491,7 @@ export default function CreateProductPage() {
                 {formData.images.map((image, index) => (
                   <div key={index} className="relative group">
                     <img
-                      src={image}
+                      src={normalizeImageUrl(image)}
                       alt={`Product ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg border border-gray-200"
                     />

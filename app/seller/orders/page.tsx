@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import toast from 'react-hot-toast';
 import { Search, Package, MapPin, X, Eye } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,11 +104,11 @@ export default function SellerOrdersPage() {
           )
         );
       } else {
-        alert('Failed to update order status');
+        toast.error('Failed to update order status');
       }
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Error updating order status');
+      toast.error('Error updating order status');
     }
   };
 
@@ -129,13 +130,13 @@ export default function SellerOrdersPage() {
             order._id === orderId ? { ...order, paymentStatus: newPaymentStatus } : order
           )
         );
-        alert('Payment status updated successfully!');
+        toast.success('Payment status updated successfully!');
       } else {
-        alert('Failed to update payment status');
+        toast.error('Failed to update payment status');
       }
     } catch (error) {
       console.error('Error updating payment status:', error);
-      alert('Error updating payment status');
+      toast.error('Error updating payment status');
     }
   };
 
@@ -146,7 +147,7 @@ export default function SellerOrdersPage() {
 
   const handleUpdateTracking = async () => {
     if (!trackingData.latitude || !trackingData.longitude || !trackingData.deliveryPersonnel.name) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -168,7 +169,7 @@ export default function SellerOrdersPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert('Tracking information updated successfully!');
+        toast.success('Tracking information updated successfully!');
         setShowTrackingModal(false);
         setTrackingData({
           latitude: '',
@@ -177,11 +178,11 @@ export default function SellerOrdersPage() {
         });
         fetchOrders(); // Refresh orders
       } else {
-        alert('Failed to update tracking: ' + data.message);
+        toast.error('Failed to update tracking: ' + data.message);
       }
     } catch (error) {
       console.error('Error updating tracking:', error);
-      alert('Error updating tracking information');
+      toast.error('Error updating tracking information');
     }
   };
 
@@ -299,174 +300,143 @@ export default function SellerOrdersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search by order ID or customer name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-          />
-        </div>
-      </div>
-
-      {/* Orders Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Orders List */}
+      <div className="space-y-4">
         {filteredOrders.length === 0 ? (
-          <div className="text-center py-12">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">No orders found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Items
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Payment
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Delivery
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredOrders.map((order) => (
-                  <tr key={order._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{order._id.slice(-8)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {order.userId?.name || 'Guest'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {order.userId?.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {order.orderItems?.length || 0} item(s)
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {order.orderItems?.[0]?.title}
-                        {order.orderItems?.length > 1 && ` +${order.orderItems.length - 1} more`}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      NPR {order.totalAmount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 mb-1">
-                        {order.paymentMethod === 'cash_on_delivery' ? 'COD' : 
-                         order.paymentMethod === 'esewa' ? 'eSewa' :
-                         order.paymentMethod === 'khalti' ? 'Khalti' :
-                         order.paymentMethod === 'card' ? 'Card' :
-                         'COD (Default)'}
-                      </div>
-                      <select
-                        value={order.paymentStatus}
-                        onChange={(e) => handlePaymentStatusUpdate(order._id, e.target.value)}
-                        className={`text-xs font-semibold px-2 py-1 rounded-full border-none focus:ring-2 focus:ring-blue-500 ${
-                          order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
-                          order.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="paid">Paid</option>
-                        <option value="failed">Failed</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={order.orderStatus}
-                        onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
-                        className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                          order.orderStatus
-                        )} border-none focus:ring-2 focus:ring-green-500`}
-                      >
-                        <option value="placed">Placed</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {order.deliveryDate ? (
-                        <div className="text-sm">
-                          <div className="text-gray-900 font-medium">
-                            {new Date(order.deliveryDate).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </div>
-                          {order.deliveryTimeSlot && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              {order.deliveryTimeSlot === 'morning' && '🌅 Morning (9AM-12PM)'}
-                              {order.deliveryTimeSlot === 'afternoon' && '☀️ Afternoon (12PM-4PM)'}
-                              {order.deliveryTimeSlot === 'evening' && '🌆 Evening (4PM-8PM)'}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">Not specified</span>
+          filteredOrders.map((order) => (
+            <div key={order._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              {/* Order Header */}
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-4 pb-4 border-b border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Order #{order._id.slice(-8)}</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {new Date(order.createdAt).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/seller/orders/${order._id}`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Details
+                  </Link>
+                  <button
+                    onClick={() => openTrackingModal(order._id)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Track
+                  </button>
+                </div>
+              </div>
+
+              {/* Order Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Customer Info */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Customer</p>
+                  <p className="text-sm font-semibold text-gray-900">{order.userId?.name || 'Guest'}</p>
+                  <p className="text-xs text-gray-600">{order.userId?.email}</p>
+                </div>
+
+                {/* Items */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Items</p>
+                  <p className="text-sm text-gray-900">{order.orderItems?.length || 0} item(s)</p>
+                  <p className="text-xs text-gray-600">
+                    {order.orderItems?.[0]?.title}
+                    {order.orderItems?.length > 1 && ` +${order.orderItems.length - 1} more`}
+                  </p>
+                </div>
+
+                {/* Total Amount */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Total Amount</p>
+                  <p className="text-lg font-bold text-gray-900">NPR {order.totalAmount.toFixed(2)}</p>
+                </div>
+
+                {/* Payment */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Payment Method</p>
+                  <p className="text-sm text-gray-900 mb-2">
+                    {order.paymentMethod === 'cash_on_delivery' ? 'Cash on Delivery' : 
+                     order.paymentMethod === 'esewa' ? 'eSewa' :
+                     order.paymentMethod === 'khalti' ? 'Khalti' :
+                     order.paymentMethod === 'card' ? 'Card' :
+                     'Cash on Delivery'}
+                  </p>
+                  <select
+                    value={order.paymentStatus}
+                    onChange={(e) => handlePaymentStatusUpdate(order._id, e.target.value)}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-full border-none focus:ring-2 focus:ring-blue-500 ${
+                      order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                      order.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+
+                {/* Order Status */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Order Status</p>
+                  <select
+                    value={order.orderStatus}
+                    onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full ${getStatusColor(
+                      order.orderStatus
+                    )} border-none focus:ring-2 focus:ring-green-500`}
+                  >
+                    <option value="placed">Placed</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Delivery Schedule */}
+                <div>
+                  <p className="text-xs text-gray-500 uppercase font-medium mb-2">Delivery Schedule</p>
+                  {order.deliveryDate ? (
+                    <div className="text-sm">
+                      <p className="text-gray-900 font-medium">
+                        {new Date(order.deliveryDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </p>
+                      {order.deliveryTimeSlot && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          {order.deliveryTimeSlot === 'morning' && '🌅 Morning (9AM-12PM)'}
+                          {order.deliveryTimeSlot === 'afternoon' && '☀️ Afternoon (12PM-4PM)'}
+                          {order.deliveryTimeSlot === 'evening' && '🌆 Evening (4PM-8PM)'}
+                        </p>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/seller/orders/${order._id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                          title="View order details"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Show
-                        </Link>
-                        <button 
-                          onClick={() => openTrackingModal(order._id)}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                          title="Update delivery tracking"
-                        >
-                          <MapPin className="w-4 h-4" />
-                          Track
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400">Not specified</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
 

@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import { useToast } from '@/hooks/use-toast';
 import { Bell, Lock, User, Store } from 'lucide-react';
 
 export default function SellerSettingsPage() {
   const { user, setUser } = useAuthStore();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('account');
   const [loading, setLoading] = useState(false);
 
@@ -14,6 +16,23 @@ export default function SellerSettingsPage() {
     name: '',
     email: '',
     phone: '',
+  });
+
+  // Validation errors
+  const [accountErrors, setAccountErrors] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
+
+  const [securityErrors, setSecurityErrors] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const [shopErrors, setShopErrors] = useState({
+    shopName: '',
   });
 
   // Load user data when component mounts
@@ -51,19 +70,130 @@ export default function SellerSettingsPage() {
   const [shopData, setShopData] = useState({
     shopName: '',
     businessType: 'individual',
-    country: 'US',
-    currency: 'USD',
-    timezone: 'America/New_York',
+    country: 'NP',
+    currency: 'NPR',
+    timezone: 'Asia/Kathmandu',
   });
+
+  // Validation functions
+  const validateAccountData = () => {
+    const errors = {
+      name: '',
+      email: '',
+      phone: '',
+    };
+
+    let isValid = true;
+
+    // Name validation
+    if (!accountData.name.trim()) {
+      errors.name = 'Name is required';
+      isValid = false;
+    } else if (accountData.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters';
+      isValid = false;
+    }
+
+    // Email validation
+    if (!accountData.email.trim()) {
+      errors.email = 'Email is required';
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accountData.email)) {
+      errors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    // Phone validation (10 digits for Nepal)
+    if (!accountData.phone.trim()) {
+      errors.phone = 'Phone number is required';
+      isValid = false;
+    } else if (!/^\d{10}$/.test(accountData.phone)) {
+      errors.phone = 'Phone number must be exactly 10 digits';
+      isValid = false;
+    }
+
+    setAccountErrors(errors);
+    return isValid;
+  };
+
+  const validateSecurityData = () => {
+    const errors = {
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    };
+
+    let isValid = true;
+
+    // Current password validation
+    if (!securityData.currentPassword) {
+      errors.currentPassword = 'Current password is required';
+      isValid = false;
+    }
+
+    // New password validation
+    if (!securityData.newPassword) {
+      errors.newPassword = 'New password is required';
+      isValid = false;
+    } else if (securityData.newPassword.length < 8) {
+      errors.newPassword = 'Password must be at least 8 characters';
+      isValid = false;
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(securityData.newPassword)) {
+      errors.newPassword = 'Password must contain uppercase, lowercase, and number';
+      isValid = false;
+    }
+
+    // Confirm password validation
+    if (!securityData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+      isValid = false;
+    } else if (securityData.newPassword !== securityData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
+    setSecurityErrors(errors);
+    return isValid;
+  };
+
+  const validateShopData = () => {
+    const errors = {
+      shopName: '',
+    };
+
+    let isValid = true;
+
+    // Shop name validation
+    if (!shopData.shopName.trim()) {
+      errors.shopName = 'Shop name is required';
+      isValid = false;
+    } else if (shopData.shopName.trim().length < 3) {
+      errors.shopName = 'Shop name must be at least 3 characters';
+      isValid = false;
+    }
+
+    setShopErrors(errors);
+    return isValid;
+  };
 
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateAccountData()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/me', {
-        method: 'PATCH',
+      const response = await fetch(`http://localhost:5000/api/auth/${user?.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -75,13 +205,25 @@ export default function SellerSettingsPage() {
 
       if (data.success) {
         setUser(data.data);
-        alert('Account settings updated!');
+        toast({
+          title: 'Success',
+          description: 'Account settings updated successfully!',
+          variant: 'default',
+        });
       } else {
-        alert(data.message || 'Failed to update account');
+        toast({
+          title: 'Error',
+          description: data.message || 'Failed to update account',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Error updating account:', error);
-      alert('An error occurred while updating account');
+      toast({
+        title: 'Error',
+        description: 'An error occurred while updating account',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -89,16 +231,26 @@ export default function SellerSettingsPage() {
 
   const handleSecuritySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (securityData.newPassword !== securityData.confirmPassword) {
-      alert('Passwords do not match!');
+    
+    if (!validateSecurityData()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form',
+        variant: 'destructive',
+      });
       return;
     }
+
     setLoading(true);
     // TODO: API call to update password
     setTimeout(() => {
       setLoading(false);
       setSecurityData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      alert('Password changed successfully!');
+      toast({
+        title: 'Success',
+        description: 'Password changed successfully!',
+        variant: 'default',
+      });
     }, 1000);
   };
 
@@ -108,18 +260,32 @@ export default function SellerSettingsPage() {
     // TODO: API call to update notification preferences
     setTimeout(() => {
       setLoading(false);
-      alert('Notification preferences saved!');
+      toast({
+        title: 'Success',
+        description: 'Notification preferences saved!',
+        variant: 'default',
+      });
     }, 1000);
   };
 
   const handleShopSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateShopData()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/me', {
-        method: 'PATCH',
+      const response = await fetch(`http://localhost:5000/api/auth/${user?.id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -131,13 +297,25 @@ export default function SellerSettingsPage() {
 
       if (data.success) {
         setUser(data.data);
-        alert('Shop settings updated!');
+        toast({
+          title: 'Success',
+          description: 'Shop settings updated successfully!',
+          variant: 'default',
+        });
       } else {
-        alert(data.message || 'Failed to update shop settings');
+        toast({
+          title: 'Error',
+          description: data.message || 'Failed to update shop settings',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Error updating shop settings:', error);
-      alert('An error occurred while updating shop settings');
+      toast({
+        title: 'Error',
+        description: 'An error occurred while updating shop settings',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -199,12 +377,18 @@ export default function SellerSettingsPage() {
                     <input
                       type="text"
                       value={accountData.name}
-                      onChange={(e) =>
-                        setAccountData({ ...accountData, name: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      onChange={(e) => {
+                        setAccountData({ ...accountData, name: e.target.value });
+                        setAccountErrors({ ...accountErrors, name: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        accountErrors.name ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="John Doe"
                     />
+                    {accountErrors.name && (
+                      <p className="text-red-500 text-sm mt-1">{accountErrors.name}</p>
+                    )}
                   </div>
 
                   <div>
@@ -214,12 +398,18 @@ export default function SellerSettingsPage() {
                     <input
                       type="email"
                       value={accountData.email}
-                      onChange={(e) =>
-                        setAccountData({ ...accountData, email: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      onChange={(e) => {
+                        setAccountData({ ...accountData, email: e.target.value });
+                        setAccountErrors({ ...accountErrors, email: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        accountErrors.email ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="john@example.com"
                     />
+                    {accountErrors.email && (
+                      <p className="text-red-500 text-sm mt-1">{accountErrors.email}</p>
+                    )}
                   </div>
 
                   <div>
@@ -229,12 +419,18 @@ export default function SellerSettingsPage() {
                     <input
                       type="tel"
                       value={accountData.phone}
-                      onChange={(e) =>
-                        setAccountData({ ...accountData, phone: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      placeholder="+1 (555) 000-0000"
+                      onChange={(e) => {
+                        setAccountData({ ...accountData, phone: e.target.value });
+                        setAccountErrors({ ...accountErrors, phone: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        accountErrors.phone ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="9800000000"
                     />
+                    {accountErrors.phone && (
+                      <p className="text-red-500 text-sm mt-1">{accountErrors.phone}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -267,15 +463,21 @@ export default function SellerSettingsPage() {
                     <input
                       type="password"
                       value={securityData.currentPassword}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setSecurityData({
                           ...securityData,
                           currentPassword: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        });
+                        setSecurityErrors({ ...securityErrors, currentPassword: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        securityErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter current password"
                     />
+                    {securityErrors.currentPassword && (
+                      <p className="text-red-500 text-sm mt-1">{securityErrors.currentPassword}</p>
+                    )}
                   </div>
 
                   <div>
@@ -285,12 +487,18 @@ export default function SellerSettingsPage() {
                     <input
                       type="password"
                       value={securityData.newPassword}
-                      onChange={(e) =>
-                        setSecurityData({ ...securityData, newPassword: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      onChange={(e) => {
+                        setSecurityData({ ...securityData, newPassword: e.target.value });
+                        setSecurityErrors({ ...securityErrors, newPassword: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        securityErrors.newPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter new password"
                     />
+                    {securityErrors.newPassword && (
+                      <p className="text-red-500 text-sm mt-1">{securityErrors.newPassword}</p>
+                    )}
                   </div>
 
                   <div>
@@ -300,15 +508,21 @@ export default function SellerSettingsPage() {
                     <input
                       type="password"
                       value={securityData.confirmPassword}
-                      onChange={(e) =>
+                      onChange={(e) => {
                         setSecurityData({
                           ...securityData,
                           confirmPassword: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        });
+                        setSecurityErrors({ ...securityErrors, confirmPassword: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        securityErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Confirm new password"
                     />
+                    {securityErrors.confirmPassword && (
+                      <p className="text-red-500 text-sm mt-1">{securityErrors.confirmPassword}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -389,12 +603,18 @@ export default function SellerSettingsPage() {
                     <input
                       type="text"
                       value={shopData.shopName}
-                      onChange={(e) =>
-                        setShopData({ ...shopData, shopName: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      onChange={(e) => {
+                        setShopData({ ...shopData, shopName: e.target.value });
+                        setShopErrors({ ...shopErrors, shopName: '' });
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        shopErrors.shopName ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="My Awesome Shop"
                     />
+                    {shopErrors.shopName && (
+                      <p className="text-red-500 text-sm mt-1">{shopErrors.shopName}</p>
+                    )}
                   </div>
 
                   <div>
@@ -425,10 +645,7 @@ export default function SellerSettingsPage() {
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      <option value="US">United States</option>
-                      <option value="CA">Canada</option>
-                      <option value="UK">United Kingdom</option>
-                      <option value="AU">Australia</option>
+                      <option value="NP">Nepal</option>
                     </select>
                   </div>
 
@@ -443,10 +660,7 @@ export default function SellerSettingsPage() {
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="CAD">CAD - Canadian Dollar</option>
-                      <option value="GBP">GBP - British Pound</option>
-                      <option value="AUD">AUD - Australian Dollar</option>
+                      <option value="NPR">NPR - Nepali Rupee</option>
                     </select>
                   </div>
 
@@ -461,10 +675,7 @@ export default function SellerSettingsPage() {
                       }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      <option value="America/New_York">Eastern Time (ET)</option>
-                      <option value="America/Chicago">Central Time (CT)</option>
-                      <option value="America/Denver">Mountain Time (MT)</option>
-                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="Asia/Kathmandu">Asia/Kathmandu (NPT)</option>
                     </select>
                   </div>
                 </div>

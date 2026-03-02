@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Users, Search, Mail, Phone, Calendar } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Search, Mail, Phone, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Customer {
   _id: string;
@@ -17,16 +17,26 @@ export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
 
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
-      // TODO: Create proper API endpoint
-      const response = await fetch('http://localhost:5000/api/users?role=customer', {
+      const query = new URLSearchParams({
+        role: 'customer',
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (searchTerm.trim()) {
+        query.set('search', searchTerm.trim());
+      }
+
+      const response = await fetch(`http://localhost:5000/api/users?${query.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -36,23 +46,39 @@ export default function AdminCustomersPage() {
         const data = await response.json();
         if (data.success && data.data?.users && Array.isArray(data.data.users)) {
           setCustomers(data.data.users);
+          setTotalPages(Math.max(Number(data.data?.pagination?.pages || 1), 1));
+          setTotalCustomers(data.data?.pagination?.total || 0);
         } else {
           setCustomers([]);
+          setTotalPages(1);
+          setTotalCustomers(0);
         }
       } else {
         setCustomers([]);
+        setTotalPages(1);
+        setTotalCustomers(0);
       }
       setLoading(false);
     } catch (error) {
       console.error('Error fetching customers:', error);
+      setTotalPages(1);
+      setTotalCustomers(0);
       setLoading(false);
     }
+  }, [page, limit, searchTerm]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  const handlePrev = () => {
+    setPage((prev) => Math.max(prev - 1, 1));
   };
 
-  const filteredCustomers = (Array.isArray(customers) ? customers : []).filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleNext = () => {
+    setPage((prev) => Math.min(prev + 1, totalPages));
+  };
 
   if (loading) {
     return (
@@ -65,29 +91,27 @@ export default function AdminCustomersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-        <p className="mt-2 text-gray-600">
-          Manage customer accounts
-        </p>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
       </div>
 
       {/* Search */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search customers by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input
+          type="text"
+          placeholder="Search customers by name or email..."
+          value={searchTerm}
+          onChange={(e) => {
+            setPage(1);
+            setSearchTerm(e.target.value);
+          }}
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+        />
       </div>
 
       {/* Customers Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="border rounded-lg bg-white shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -110,14 +134,14 @@ export default function AdminCustomersPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCustomers.length === 0 ? (
+              {customers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                     No customers found
                   </td>
                 </tr>
               ) : (
-                filteredCustomers.map((customer) => (
+                customers.map((customer) => (
                   <tr key={customer._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -169,6 +193,32 @@ export default function AdminCustomersPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex justify-between items-center p-4 border-t border-gray-200">
+          <span className="text-sm text-gray-700">
+            Page {page} of {totalPages} | Total Customers: {totalCustomers}
+          </span>
+          <div className="space-x-2">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={page === 1}
+              aria-label="Previous page"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={page >= totalPages}
+              aria-label="Next page"
+              className="px-3 py-1.5 border border-gray-300 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 inline-flex items-center"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

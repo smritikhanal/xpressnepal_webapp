@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
-import { Store, Package, DollarSign, Calendar } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Store, Package, Coins, Calendar } from 'lucide-react';
 
 interface SellerStats {
   totalProducts: number;
@@ -93,7 +94,7 @@ export default function SellerProfilePage() {
 
       if (data.success) {
         setUser(data.data);
-        alert('Profile updated successfully!');
+        toast.success('Profile updated successfully!');
         // Refresh form data with updated values
         setFormData({
           name: data.data.name || '',
@@ -102,11 +103,11 @@ export default function SellerProfilePage() {
           businessDescription: data.data.businessDescription || '',
         });
       } else {
-        alert(data.message || 'Failed to update profile');
+        toast.error(data.message || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('An error occurred while updating profile');
+      toast.error('An error occurred while updating profile');
     } finally {
       setLoading(false);
     }
@@ -153,11 +154,11 @@ export default function SellerProfilePage() {
             <div>
               <p className="text-sm text-gray-600">Total Revenue</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
-                ${stats.totalRevenue.toFixed(2)}
+                NPR {stats.totalRevenue.toFixed(2)}
               </p>
             </div>
             <div className="bg-purple-100 p-3 rounded-lg">
-              <DollarSign className="w-6 h-6 text-purple-600" />
+              <Coins className="w-6 h-6 text-purple-600" />
             </div>
           </div>
         </div>

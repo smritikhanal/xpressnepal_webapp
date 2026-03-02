@@ -19,4 +19,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-backend/uploads/"backend/uploads/" 
+# Uploads
+uploads/ 

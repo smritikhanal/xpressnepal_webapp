@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { normalizeImageUrl } from '@/lib/utils';
 import Link from 'next/link';
 import {
   LayoutDashboard,
@@ -23,11 +24,13 @@ export default function SellerLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -95,8 +98,16 @@ export default function SellerLayout({
           {/* User info */}
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white font-semibold">
-                {user.name.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
+                {user.image ? (
+                  <img
+                    src={normalizeImageUrl(user.image)}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-500">Seller Dashboard</p>
@@ -111,11 +122,16 @@ export default function SellerLayout({
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
+              const isActive = pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-green-600 transition-colors"
+                  className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-green-600'
+                  }`}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   {item.name}

@@ -4,7 +4,8 @@
  */
 
 export interface User {
-  _id: string;
+  id: string;
+  _id?: string;
   name: string;
   email: string;
   role: 'user' | 'admin' | 'superadmin' | 'seller' | 'customer';

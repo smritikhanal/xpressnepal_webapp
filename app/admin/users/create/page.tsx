@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import apiClient from '@/lib/api-client';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 
 const createUserSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -60,10 +61,11 @@ export default function CreateUserPage() {
             if (imageFile) formData.append('image', imageFile);
 
             await apiClient.adminUsers.create(formData);
+            toast.success(`User "${data.name}" created successfully!`);
             router.push('/admin/users');
         } catch (error: any) {
             console.error(error);
-            alert(error.response?.data?.message || 'Failed to create user');
+            toast.error(error.response?.data?.message || 'Failed to create user');
         } finally {
             setLoading(false);
         }

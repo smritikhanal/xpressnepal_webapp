@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
+  type LucideIcon,
+  Coins,
   ShoppingCart,
   Users,
   Package,
@@ -35,18 +34,302 @@ interface AnalyticsData {
   };
 }
 
+interface TopProduct {
+  name: string;
+  sales: number;
+  revenue: number;
+}
+
+interface TopCustomer {
+  name: string;
+  orders: number;
+  spent: number;
+}
+
+interface CategorySales {
+  name: string;
+  sales: number;
+  percentage: number;
+}
+
+interface RevenuePoint {
+  date: string;
+  value: number;
+}
+
+interface ApiOrderItem {
+  productId?: string | { _id?: string; title?: string };
+  quantity?: number;
+  price?: number;
+}
+
+interface ApiOrder {
+  _id: string;
+  userId?: string | { _id?: string; name?: string; email?: string };
+  orderItems?: ApiOrderItem[];
+  items?: ApiOrderItem[];
+  totalAmount?: number;
+  createdAt?: string;
+}
+
+interface ApiUser {
+  _id: string;
+  name?: string;
+  createdAt?: string;
+}
+
+interface ApiProduct {
+  _id: string;
+  title?: string;
+  categoryId?: string | { _id?: string; name?: string };
+  createdAt?: string;
+}
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+const calculateChange = (current: number, previous: number) => {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
+
+  return Number((((current - previous) / previous) * 100).toFixed(1));
+};
+
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData>({
-    revenue: { current: 45230.5, previous: 38920.3, change: 16.2 },
-    orders: { current: 234, previous: 198, change: 18.2 },
-    customers: { current: 1842, previous: 1623, change: 13.5 },
-    products: { current: 156, previous: 142, change: 9.9 },
+    revenue: { current: 0, previous: 0, change: 0 },
+    orders: { current: 0, previous: 0, change: 0 },
+    customers: { current: 0, previous: 0, change: 0 },
+    products: { current: 0, previous: 0, change: 0 },
   });
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([]);
+  const [categorySales, setCategorySales] = useState<CategorySales[]>([]);
+  const [revenueSeries, setRevenueSeries] = useState<RevenuePoint[]>([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // TODO: Fetch analytics from API
-    setTimeout(() => setLoading(false), 500);
+    const fetchAnalytics = async () => {
+      try {
+        const token = localStorage.getItem('token');
+
+        if (!token) {
+          setError('Authentication required to load analytics data.');
+          return;
+        }
+
+        const [ordersRes, customersRes, productsRes] = await Promise.all([
+          fetch('http://localhost:5000/api/orders/admin/all?limit=1000', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch('http://localhost:5000/api/users?role=customer&limit=1000', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          fetch('http://localhost:5000/api/products?limit=1000', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+        ]);
+
+        const [ordersData, customersData, productsData] = await Promise.all([
+          ordersRes.json(),
+          customersRes.json(),
+          productsRes.json(),
+        ]);
+
+        const orders: ApiOrder[] = Array.isArray(ordersData.data?.orders)
+          ? ordersData.data.orders
+          : [];
+        const customers: ApiUser[] = Array.isArray(customersData.data?.users)
+          ? customersData.data.users
+          : [];
+        const products: ApiProduct[] = Array.isArray(productsData.data?.products)
+          ? productsData.data.products
+          : [];
+
+        const now = Date.now();
+        const currentPeriodStart = now - THIRTY_DAYS_MS;
+        const previousPeriodStart = now - (2 * THIRTY_DAYS_MS);
+
+        const inCurrentPeriod = (dateValue?: string) => {
+          if (!dateValue) return false;
+          const timestamp = new Date(dateValue).getTime();
+          return timestamp >= currentPeriodStart;
+        };
+
+        const inPreviousPeriod = (dateValue?: string) => {
+          if (!dateValue) return false;
+          const timestamp = new Date(dateValue).getTime();
+          return timestamp >= previousPeriodStart && timestamp < currentPeriodStart;
+        };
+
+        const currentRevenue = orders
+          .filter((order) => inCurrentPeriod(order.createdAt))
+          .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+        const previousRevenue = orders
+          .filter((order) => inPreviousPeriod(order.createdAt))
+          .reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+
+        const dailyRevenueMap = new Map<string, number>();
+
+        orders.forEach((order) => {
+          if (!inCurrentPeriod(order.createdAt)) return;
+
+          const orderDate = new Date(order.createdAt as string);
+          const key = `${orderDate.getFullYear()}-${String(orderDate.getMonth() + 1).padStart(2, '0')}-${String(orderDate.getDate()).padStart(2, '0')}`;
+          dailyRevenueMap.set(key, (dailyRevenueMap.get(key) || 0) + (order.totalAmount || 0));
+        });
+
+        const chartSeries: RevenuePoint[] = Array.from({ length: 30 }, (_, index) => {
+          const date = new Date();
+          date.setHours(0, 0, 0, 0);
+          date.setDate(date.getDate() - (29 - index));
+
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+          return {
+            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            value: dailyRevenueMap.get(key) || 0,
+          };
+        });
+
+        setRevenueSeries(chartSeries);
+
+        const totalOrders = Number(ordersData.data?.pagination?.total || orders.length);
+        const ordersAddedCurrentPeriod = orders.filter((order) => inCurrentPeriod(order.createdAt)).length;
+        const previousTotalOrders = Math.max(totalOrders - ordersAddedCurrentPeriod, 0);
+
+        const totalCustomers = Number(customersData.data?.pagination?.total || customers.length);
+        const customersAddedCurrentPeriod = customers.filter((customer) => inCurrentPeriod(customer.createdAt)).length;
+        const previousTotalCustomers = Math.max(totalCustomers - customersAddedCurrentPeriod, 0);
+
+        const totalProducts = Number(productsData.data?.pagination?.total || products.length);
+        const productsAddedCurrentPeriod = products.filter((product) => inCurrentPeriod(product.createdAt)).length;
+        const previousTotalProducts = Math.max(totalProducts - productsAddedCurrentPeriod, 0);
+
+        setAnalytics({
+          revenue: {
+            current: currentRevenue,
+            previous: previousRevenue,
+            change: calculateChange(currentRevenue, previousRevenue),
+          },
+          orders: {
+            current: totalOrders,
+            previous: previousTotalOrders,
+            change: calculateChange(totalOrders, previousTotalOrders),
+          },
+          customers: {
+            current: totalCustomers,
+            previous: previousTotalCustomers,
+            change: calculateChange(totalCustomers, previousTotalCustomers),
+          },
+          products: {
+            current: totalProducts,
+            previous: previousTotalProducts,
+            change: calculateChange(totalProducts, previousTotalProducts),
+          },
+        });
+
+        const productNameMap = new Map<string, string>();
+        const productCategoryMap = new Map<string, string>();
+
+        products.forEach((product) => {
+          productNameMap.set(product._id, product.title || 'Unknown Product');
+          const categoryName = typeof product.categoryId === 'string'
+            ? 'Uncategorized'
+            : (product.categoryId?.name || 'Uncategorized');
+          productCategoryMap.set(product._id, categoryName);
+        });
+
+        const productStats = new Map<string, { sales: number; revenue: number }>();
+        const customerStats = new Map<string, { name: string; orders: number; spent: number }>();
+        const categoryStats = new Map<string, number>();
+
+        orders.forEach((order) => {
+          const orderAmount = order.totalAmount || 0;
+          const customerId = typeof order.userId === 'string'
+            ? order.userId
+            : (order.userId?._id || 'guest');
+          const customerName = typeof order.userId === 'string'
+            ? 'Guest'
+            : (order.userId?.name || 'Guest');
+
+          const existingCustomer = customerStats.get(customerId) || {
+            name: customerName,
+            orders: 0,
+            spent: 0,
+          };
+
+          existingCustomer.orders += 1;
+          existingCustomer.spent += orderAmount;
+          customerStats.set(customerId, existingCustomer);
+
+          const orderItems = Array.isArray(order.orderItems)
+            ? order.orderItems
+            : (Array.isArray(order.items) ? order.items : []);
+
+          orderItems.forEach((item) => {
+            const quantity = item.quantity || 0;
+            const lineRevenue = (item.price || 0) * quantity;
+            const productId = typeof item.productId === 'string'
+              ? item.productId
+              : (item.productId?._id || 'unknown-product');
+
+            const productEntry = productStats.get(productId) || { sales: 0, revenue: 0 };
+            productEntry.sales += quantity;
+            productEntry.revenue += lineRevenue;
+            productStats.set(productId, productEntry);
+
+            const categoryName = productCategoryMap.get(productId) || 'Uncategorized';
+            categoryStats.set(categoryName, (categoryStats.get(categoryName) || 0) + lineRevenue);
+          });
+        });
+
+        const computedTopProducts = Array.from(productStats.entries())
+          .map(([productId, stats]) => ({
+            name: productNameMap.get(productId) || 'Unknown Product',
+            sales: stats.sales,
+            revenue: stats.revenue,
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+
+        const computedTopCustomers = Array.from(customerStats.values())
+          .sort((a, b) => b.spent - a.spent)
+          .slice(0, 5);
+
+        const totalCategoryRevenue = Array.from(categoryStats.values()).reduce((sum, value) => sum + value, 0);
+
+        const computedCategorySales = Array.from(categoryStats.entries())
+          .map(([name, sales]) => ({
+            name,
+            sales,
+            percentage: totalCategoryRevenue > 0
+              ? Math.round((sales / totalCategoryRevenue) * 100)
+              : 0,
+          }))
+          .sort((a, b) => b.sales - a.sales)
+          .slice(0, 6);
+
+        setTopProducts(computedTopProducts);
+        setTopCustomers(computedTopCustomers);
+        setCategorySales(computedCategorySales);
+      } catch (fetchError) {
+        console.error('Error fetching analytics:', fetchError);
+        setError('Failed to load analytics data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
   }, []);
 
   const StatCard = ({
@@ -61,7 +344,7 @@ export default function AnalyticsPage() {
     current: string;
     previous: string;
     change: number;
-    icon: any;
+    icon: LucideIcon;
     color: string;
   }) => {
     const isPositive = change >= 0;
@@ -108,6 +391,41 @@ export default function AnalyticsPage() {
     );
   }
 
+  const maxRevenueValue = Math.max(...revenueSeries.map((point) => point.value), 1);
+  const svgWidth = 900;
+  const svgHeight = 230;
+  const chartMargin = { top: 18, right: 20, bottom: 34, left: 34 };
+  const chartWidth = svgWidth - chartMargin.left - chartMargin.right;
+  const chartHeight = svgHeight - chartMargin.top - chartMargin.bottom;
+
+  const points = revenueSeries.map((point, index) => {
+    const x = chartMargin.left + (index * chartWidth) / Math.max(revenueSeries.length - 1, 1);
+    const y = chartMargin.top + (1 - point.value / maxRevenueValue) * chartHeight;
+    return { ...point, x, y };
+  });
+
+  const linePath = points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ');
+
+  const areaPath = points.length > 0
+    ? `${linePath} L ${points[points.length - 1].x} ${svgHeight - chartMargin.bottom} L ${points[0].x} ${svgHeight - chartMargin.bottom} Z`
+    : '';
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
+          <p className="mt-2 text-gray-600">Track your store performance and insights</p>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -122,10 +440,10 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Revenue"
-          current={`$${analytics.revenue.current.toLocaleString()}`}
-          previous={`$${analytics.revenue.previous.toLocaleString()}`}
+          current={`NPR ${analytics.revenue.current.toLocaleString()}`}
+          previous={`NPR ${analytics.revenue.previous.toLocaleString()}`}
           change={analytics.revenue.change}
-          icon={DollarSign}
+          icon={Coins}
           color="bg-green-500"
         />
 
@@ -162,8 +480,50 @@ export default function AnalyticsPage() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           Revenue Overview
         </h2>
-        <div className="h-64 flex items-center justify-center text-gray-400">
-          <p>Chart visualization coming soon...</p>
+        <div className="h-72">
+          {revenueSeries.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              <p>No revenue data available for the last 30 days.</p>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-gray-500">
+                  Daily revenue trend (last 30 days)
+                </p>
+                <p className="text-sm font-semibold text-gray-700">
+                  Total: NPR {analytics.revenue.current.toLocaleString()}
+                </p>
+              </div>
+
+              <div className="flex-1 rounded-lg border border-gray-100 bg-linear-to-b from-blue-50/50 to-white p-2 overflow-hidden">
+                <svg
+                  viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                  className="w-full h-full block"
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <line x1={chartMargin.left} y1={chartMargin.top} x2={chartMargin.left} y2={svgHeight - chartMargin.bottom} stroke="#e5e7eb" strokeWidth="1" />
+                  <line x1={chartMargin.left} y1={svgHeight - chartMargin.bottom} x2={svgWidth - chartMargin.right} y2={svgHeight - chartMargin.bottom} stroke="#e5e7eb" strokeWidth="1" />
+
+                  <line x1={chartMargin.left} y1={chartMargin.top + chartHeight * 0.25} x2={svgWidth - chartMargin.right} y2={chartMargin.top + chartHeight * 0.25} stroke="#f3f4f6" strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1={chartMargin.left} y1={chartMargin.top + chartHeight * 0.5} x2={svgWidth - chartMargin.right} y2={chartMargin.top + chartHeight * 0.5} stroke="#f3f4f6" strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1={chartMargin.left} y1={chartMargin.top + chartHeight * 0.75} x2={svgWidth - chartMargin.right} y2={chartMargin.top + chartHeight * 0.75} stroke="#f3f4f6" strokeWidth="1" strokeDasharray="3 3" />
+
+                  {areaPath && <path d={areaPath} fill="rgba(37, 99, 235, 0.12)" />}
+                  {linePath && <path d={linePath} fill="none" stroke="#2563eb" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
+
+                  {points.filter((_, index) => index % 7 === 0 || index === points.length - 1).map((point, index) => (
+                    <g key={`${point.date}-${index}`}>
+                      <circle cx={point.x} cy={point.y} r="3" fill="#1d4ed8" />
+                      <text x={point.x} y={svgHeight - 10} textAnchor="middle" fontSize="11" fill="#6b7280">
+                        {point.date}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -175,13 +535,9 @@ export default function AnalyticsPage() {
             Top Products
           </h2>
           <div className="space-y-4">
-            {[
-              { name: 'Wireless Headphones', sales: 342, revenue: '$15,390' },
-              { name: 'Smart Watch Pro', sales: 289, revenue: '$28,900' },
-              { name: 'Gaming Mouse', sales: 256, revenue: '$7,680' },
-              { name: 'Mechanical Keyboard', sales: 198, revenue: '$19,800' },
-              { name: 'USB-C Hub', sales: 176, revenue: '$4,400' },
-            ].map((product, index) => (
+            {topProducts.length === 0 ? (
+              <p className="text-sm text-gray-500">No product sales data available yet.</p>
+            ) : topProducts.map((product, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -190,7 +546,7 @@ export default function AnalyticsPage() {
                   <p className="font-medium text-gray-900">{product.name}</p>
                   <p className="text-sm text-gray-600">{product.sales} sales</p>
                 </div>
-                <p className="font-semibold text-gray-900">{product.revenue}</p>
+                <p className="font-semibold text-gray-900">NPR {product.revenue.toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -202,13 +558,9 @@ export default function AnalyticsPage() {
             Top Customers
           </h2>
           <div className="space-y-4">
-            {[
-              { name: 'John Doe', orders: 24, spent: '$4,832' },
-              { name: 'Jane Smith', orders: 19, spent: '$3,876' },
-              { name: 'Bob Wilson', orders: 17, spent: '$3,215' },
-              { name: 'Alice Johnson', orders: 15, spent: '$2,940' },
-              { name: 'Charlie Brown', orders: 13, spent: '$2,587' },
-            ].map((customer, index) => (
+            {topCustomers.length === 0 ? (
+              <p className="text-sm text-gray-500">No customer order data available yet.</p>
+            ) : topCustomers.map((customer, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -219,7 +571,7 @@ export default function AnalyticsPage() {
                     {customer.orders} orders
                   </p>
                 </div>
-                <p className="font-semibold text-gray-900">{customer.spent}</p>
+                <p className="font-semibold text-gray-900">NPR {customer.spent.toLocaleString()}</p>
               </div>
             ))}
           </div>
@@ -232,18 +584,15 @@ export default function AnalyticsPage() {
           Sales by Category
         </h2>
         <div className="space-y-4">
-          {[
-            { name: 'Electronics', sales: '$42,850', percentage: 45 },
-            { name: 'Phones', sales: '$28,920', percentage: 30 },
-            { name: 'Accessories', sales: '$15,280', percentage: 16 },
-            { name: 'Others', sales: '$8,180', percentage: 9 },
-          ].map((category, index) => (
+          {categorySales.length === 0 ? (
+            <p className="text-sm text-gray-500">No category sales data available yet.</p>
+          ) : categorySales.map((category, index) => (
             <div key={index}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-900">
                   {category.name}
                 </span>
-                <span className="text-sm text-gray-600">{category.sales}</span>
+                <span className="text-sm text-gray-600">NPR {category.sales.toLocaleString()}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div

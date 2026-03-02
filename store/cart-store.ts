@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import toast from 'react-hot-toast';
 
 export interface CartItem {
   productId: {
@@ -14,6 +15,18 @@ export interface CartItem {
   };
   quantity: number;
   priceAtTime: number;
+}
+
+interface RawCartItem {
+  productId: unknown;
+  quantity: number;
+  priceAtTime: number;
+}
+
+interface RawCart {
+  _id: string;
+  userId: string;
+  items: RawCartItem[];
 }
 
 interface Cart {
@@ -38,11 +51,43 @@ interface CartState {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
+const isPopulatedProduct = (value: unknown): value is CartItem['productId'] => {
+  if (!value || typeof value !== 'object') return false;
+
+  const product = value as Record<string, unknown>;
+  return (
+    typeof product._id === 'string' &&
+    typeof product.title === 'string' &&
+    typeof product.slug === 'string' &&
+    typeof product.price === 'number' &&
+    Array.isArray(product.images) &&
+    typeof product.stock === 'number'
+  );
+};
+
+const normalizeCart = (rawCart: RawCart | Cart | null): Cart | null => {
+  if (!rawCart) return null;
+
+  const safeItems = (rawCart.items || [])
+    .filter((item): item is RawCartItem => isPopulatedProduct(item?.productId))
+    .map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      priceAtTime: item.priceAtTime,
+    }));
+
+  return {
+    _id: rawCart._id,
+    userId: rawCart.userId,
+    items: safeItems,
+  };
+};
+
 export const useCartStore = create<CartState>()((set, get) => ({
   cart: null,
   loading: false,
 
-  setCart: (cart) => set({ cart }),
+  setCart: (cart) => set({ cart: normalizeCart(cart) }),
 
   fetchCart: async () => {
     try {
@@ -56,7 +101,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        set({ cart: data.data });
+        set({ cart: normalizeCart(data.data as RawCart) });
       }
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -69,7 +114,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        alert('Please login to add items to cart');
+        toast.error('Please login to add items to cart');
         return false;
       }
 
@@ -84,15 +129,15 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        set({ cart: data.data });
+        set({ cart: normalizeCart(data.data as RawCart) });
         return true;
       } else {
-        alert(data.message || 'Failed to add item to cart');
+        toast.error(data.message || 'Failed to add item to cart');
         return false;
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('An error occurred');
+      toast.error('An error occurred');
       return false;
     }
   },
@@ -109,7 +154,7 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        set({ cart: data.data });
+        set({ cart: normalizeCart(data.data as RawCart) });
       }
     } catch (error) {
       console.error('Error removing item:', error);
@@ -132,9 +177,9 @@ export const useCartStore = create<CartState>()((set, get) => ({
 
       const data = await response.json();
       if (data.success) {
-        set({ cart: data.data });
+        set({ cart: normalizeCart(data.data as RawCart) });
       } else {
-        alert(data.message || 'Failed to update cart');
+        toast.error(data.message || 'Failed to update cart');
       }
     } catch (error) {
       console.error('Error updating cart:', error);

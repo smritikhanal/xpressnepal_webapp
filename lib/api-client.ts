@@ -180,7 +180,7 @@ export const apiClient = {
 
   user: {
     updateProfile: (id: string, data: any) =>
-      axiosInstance.put<ApiResponse>(`/api/users/${id}`, data, {
+      axiosInstance.put<ApiResponse>(`/api/auth/${id}`, data, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -192,7 +192,7 @@ export const apiClient = {
 
   // Admin User Management
   adminUsers: {
-    getAll: (params?: { page?: number; limit?: number }) =>
+    getAll: (params?: { page?: number; limit?: number; search?: string; role?: string }) =>
       axiosInstance.get<ApiResponse>('/api/admin/users', { params }),
 
     getById: (id: string) =>

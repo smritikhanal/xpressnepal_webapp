@@ -2,22 +2,52 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, Truck, Save } from 'lucide-react';
+import { ArrowLeft, MapPin, Truck, User, Mail, Phone, Package, CreditCard, Calendar } from 'lucide-react';
 import DeliveryTracking from '@/components/DeliveryTracking';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { normalizeImageUrl } from '@/lib/utils';
 import toast from 'react-hot-toast';
+
+interface Customer {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+}
+
+interface OrderItem {
+  productId: {
+    _id: string;
+    name: string;
+    images: string[];
+    price: number;
+  };
+  quantity: number;
+  price: number;
+  _id: string;
+}
+
+interface ShippingAddress {
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
 
 interface Order {
   _id: string;
-  userId: string;
-  orderItems: any[];
+  userId: Customer;
+  orderItems: OrderItem[];
   totalAmount: number;
+  paymentMethod: string;
   paymentStatus: string;
   orderStatus: 'placed' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  shippingAddress: any;
+  shippingAddress: ShippingAddress;
   deliveryPersonnel?: {
     name: string;
     phone: string;
@@ -38,29 +68,11 @@ export default function AdminOrderDetailPage() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-
-  // Form states
-  const [orderStatus, setOrderStatus] = useState<string>('placed');
-  const [deliveryPersonName, setDeliveryPersonName] = useState('');
-  const [deliveryPersonPhone, setDeliveryPersonPhone] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
 
   useEffect(() => {
     fetchOrderDetails();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
-
-  useEffect(() => {
-    if (order) {
-      setOrderStatus(order.orderStatus);
-      setDeliveryPersonName(order.deliveryPersonnel?.name || '');
-      setDeliveryPersonPhone(order.deliveryPersonnel?.phone || '');
-      setLatitude(order.currentLocation?.latitude?.toString() || '');
-      setLongitude(order.currentLocation?.longitude?.toString() || '');
-    }
-  }, [order]);
 
   const fetchOrderDetails = async () => {
     try {
@@ -90,83 +102,6 @@ export default function AdminOrderDetailPage() {
     }
   };
 
-  const handleUpdateStatus = async () => {
-    if (!order) return;
-
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem('token');
-      console.log('🚀 Updating order status to:', orderStatus);
-      
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ orderStatus: orderStatus }),
-      });
-
-      const data = await response.json();
-      console.log('📡 Status update response:', data);
-      
-      if (data.success) {
-        setOrder(data.data);
-        toast.success(`✅ Order status updated to "${orderStatus}" - Customer will be notified in real-time`, {
-          duration: 4000,
-        });
-        console.log('✅ Order status updated successfully');
-      } else {
-        toast.error(data.message || 'Failed to update order status');
-      }
-    } catch (err) {
-      console.error('Error updating status:', err);
-      toast.error('An error occurred while updating order status');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleUpdateDeliveryTracking = async () => {
-    if (!order) return;
-
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/delivery-tracking`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
-          deliveryPersonnel: {
-            name: deliveryPersonName,
-            phone: deliveryPersonPhone,
-          },
-        }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setOrder(data.data);
-        toast.success('📍 Delivery tracking updated - Customer can see live location now', {
-          duration: 4000,
-        });
-        console.log('✅ Delivery tracking updated successfully');
-      } else {
-        toast.error(data.message || 'Failed to update delivery tracking');
-      }
-    } catch (err) {
-      console.error('Error updating delivery tracking:', err);
-      toast.error('An error occurred while updating delivery tracking');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -190,7 +125,7 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6">
           <Link
@@ -200,152 +135,264 @@ export default function AdminOrderDetailPage() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Orders
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Order Details
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Order ID: <span className="font-mono text-sm">{order._id}</span>
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Order Details
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Order ID: <span className="font-mono text-sm">{order._id}</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <div className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
+                order.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
+                order.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                order.orderStatus === 'confirmed' ? 'bg-purple-100 text-purple-800' :
+                order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1)}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Admin Controls */}
-          <div className="space-y-6">
-            {/* Order Status Control */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Order Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Customer Details */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <Truck className="w-5 h-5 mr-2" />
-                Update Order Status
+                <User className="w-5 h-5 mr-2" />
+                Customer Details
               </h2>
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="status">Order Status</Label>
-                  <Select value={orderStatus} onValueChange={setOrderStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="placed">Placed</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-gray-600">Name</Label>
+                  <p className="font-medium text-gray-900">{order.userId?.name || 'N/A'}</p>
                 </div>
-                <Button
-                  onClick={handleUpdateStatus}
-                  disabled={updating || orderStatus === order.orderStatus}
-                  className="w-full"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Update Status
-                </Button>
+                <div>
+                  <Label className="text-gray-600">Email</Label>
+                  <p className="font-medium text-gray-900 flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-gray-500" />
+                    {order.userId?.email || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Phone</Label>
+                  <p className="font-medium text-gray-900 flex items-center">
+                    <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                    {order.userId?.phone || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-gray-600">Customer ID</Label>
+                  <p className="font-medium text-gray-900 font-mono text-sm">{order.userId?._id || 'N/A'}</p>
+                </div>
               </div>
             </div>
 
-            {/* Delivery Tracking Control */}
+            {/* Shipping Address */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <MapPin className="w-5 h-5 mr-2" />
-                Update Delivery Tracking
+                Shipping Address
               </h2>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="deliveryPersonName">Delivery Person Name</Label>
-                  <Input
-                    id="deliveryPersonName"
-                    value={deliveryPersonName}
-                    onChange={(e) => setDeliveryPersonName(e.target.value)}
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="deliveryPersonPhone">Phone Number</Label>
-                  <Input
-                    id="deliveryPersonPhone"
-                    value={deliveryPersonPhone}
-                    onChange={(e) => setDeliveryPersonPhone(e.target.value)}
-                    placeholder="+977-9812345678"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="latitude">Latitude</Label>
-                    <Input
-                      id="latitude"
-                      type="number"
-                      step="0.000001"
-                      value={latitude}
-                      onChange={(e) => setLatitude(e.target.value)}
-                      placeholder="27.717245"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="longitude">Longitude</Label>
-                    <Input
-                      id="longitude"
-                      type="number"
-                      step="0.000001"
-                      value={longitude}
-                      onChange={(e) => setLongitude(e.target.value)}
-                      placeholder="85.323959"
-                    />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600">
-                  💡 Tip: Right-click on Google Maps and select coordinates to copy them
+              <div className="space-y-2">
+                <p className="font-medium text-gray-900">{order.shippingAddress?.fullName}</p>
+                <p className="text-gray-700">{order.shippingAddress?.addressLine1}</p>
+                {order.shippingAddress?.addressLine2 && (
+                  <p className="text-gray-700">{order.shippingAddress.addressLine2}</p>
+                )}
+                <p className="text-gray-700">
+                  {order.shippingAddress?.city}, {order.shippingAddress?.state} {order.shippingAddress?.postalCode}
                 </p>
-                <Button
-                  onClick={handleUpdateDeliveryTracking}
-                  disabled={updating || !latitude || !longitude}
-                  className="w-full"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  Update Delivery Tracking
-                </Button>
+                <p className="text-gray-700">{order.shippingAddress?.country}</p>
+                <p className="text-gray-700 flex items-center mt-2">
+                  <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                  {order.shippingAddress?.phone}
+                </p>
               </div>
             </div>
 
-            {/* Order Summary */}
+            {/* Order Items */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Amount:</span>
-                  <span className="font-semibold">NPR {order.totalAmount.toFixed(2)}</span>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Package className="w-5 h-5 mr-2" />
+                Order Items ({order.orderItems?.length || 0})
+              </h2>
+              <div className="space-y-4">
+                {order.orderItems?.map((item) => (
+                  <div key={item._id} className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg">
+                    {item.productId?.images?.[0] && (
+                      <img
+                        src={normalizeImageUrl(item.productId.images[0])}
+                        alt={item.productId?.name || 'Product'}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">{item.productId?.name || 'Product N/A'}</h3>
+                      <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                      <p className="text-sm text-gray-600">Price: NPR {item.price?.toFixed(2)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">
+                        NPR {(item.price * item.quantity).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Order Total */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-900">Total Amount</span>
+                  <span className="text-2xl font-bold text-blue-600">
+                    NPR {order.totalAmount?.toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Payment Status:</span>
-                  <span className="font-semibold capitalize">{order.paymentStatus}</span>
+              </div>
+            </div>
+
+            {/* Payment Information */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <CreditCard className="w-5 h-5 mr-2" />
+                Payment Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label className="text-gray-600">Payment Method</Label>
+                  <p className="font-medium text-gray-900 capitalize">
+                    {order.paymentMethod || 'Cash on Delivery'}
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Items:</span>
-                  <span className="font-semibold">{order.orderItems.length}</span>
+                <div>
+                  <Label className="text-gray-600">Payment Status</Label>
+                  <p className={`font-medium inline-block px-3 py-1 rounded-full text-sm ${
+                    order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' :
+                    order.paymentStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {order.paymentStatus?.charAt(0).toUpperCase() + order.paymentStatus?.slice(1)}
+                  </p>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Created:</span>
-                  <span className="font-semibold">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                <div>
+                  <Label className="text-gray-600">Total Paid</Label>
+                  <p className="font-medium text-gray-900">
+                    {order.paymentStatus === 'paid' ? `NPR ${order.totalAmount?.toFixed(2)}` : 'Pending'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Timeline */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Calendar className="w-5 h-5 mr-2" />
+                Order Timeline
+              </h2>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-gray-600">Order Placed</span>
+                  <span className="font-medium text-gray-900">
+                    {new Date(order.createdAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <span className="text-gray-600">Last Updated</span>
+                  <span className="font-medium text-gray-900">
+                    {new Date(order.updatedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600">Current Status</span>
+                  <span className="font-medium text-gray-900 capitalize">
+                    {order.orderStatus}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Real-time Tracking Display */}
-          <div>
-            <DeliveryTracking
-              orderId={order._id}
-              orderStatus={order.orderStatus}
-              currentLocation={order.currentLocation}
-              deliveryPersonnel={order.deliveryPersonnel}
-            />
+          {/* Right Column - Admin Controls & Tracking */}
+          <div className="space-y-6">
+            {/* Order Status Display */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <Truck className="w-5 h-5 mr-2" />
+                Current Order Status
+              </h2>
+              <div className="space-y-3">
+                <div className={`px-6 py-4 rounded-lg text-center ${
+                  order.orderStatus === 'delivered' ? 'bg-green-100' :
+                  order.orderStatus === 'shipped' ? 'bg-blue-100' :
+                  order.orderStatus === 'confirmed' ? 'bg-purple-100' :
+                  order.orderStatus === 'cancelled' ? 'bg-red-100' :
+                  'bg-yellow-100'
+                }`}>
+                  <p className={`text-2xl font-bold capitalize ${
+                    order.orderStatus === 'delivered' ? 'text-green-800' :
+                    order.orderStatus === 'shipped' ? 'text-blue-800' :
+                    order.orderStatus === 'confirmed' ? 'text-purple-800' :
+                    order.orderStatus === 'cancelled' ? 'text-red-800' :
+                    'text-yellow-800'
+                  }`}>
+                    {order.orderStatus}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Information Display */}
+            {order.deliveryPersonnel && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <MapPin className="w-5 h-5 mr-2" />
+                  Delivery Information
+                </h2>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-gray-600">Delivery Person</Label>
+                    <p className="font-medium text-gray-900">{order.deliveryPersonnel.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-600">Contact Phone</Label>
+                    <p className="font-medium text-gray-900 flex items-center">
+                      <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                      {order.deliveryPersonnel.phone}
+                    </p>
+                  </div>
+                  {order.currentLocation && (
+                    <div>
+                      <Label className="text-gray-600">Current Location</Label>
+                      <p className="font-medium text-gray-900 font-mono text-sm">
+                        {order.currentLocation.latitude.toFixed(6)}, {order.currentLocation.longitude.toFixed(6)}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Last updated: {new Date(order.currentLocation.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Real-time Tracking Display */}
+            <div>
+              <DeliveryTracking
+                orderId={order._id}
+                orderStatus={order.orderStatus}
+                currentLocation={order.currentLocation}
+                deliveryPersonnel={order.deliveryPersonnel}
+              />
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
-  }
-
-
+}
