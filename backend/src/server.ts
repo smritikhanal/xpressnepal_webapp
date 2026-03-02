@@ -7,6 +7,7 @@ import { ApiError } from './utils/apiHelpers.js';
 
 // Route imports
 import authRoutes from './routes/auth.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import userRoutes from './routes/user.routes.js';
 import messageRoutes from './routes/message.routes.js';
 import categoryRoutes from './routes/category.routes.js';
@@ -70,6 +71,7 @@ app.get('/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     endpoints: [
       '/api/auth',
+      '/api/admin',
       '/api/users',
       '/api/categories',
       '/api/products',
@@ -86,6 +88,7 @@ app.get('/health', (_req: Request, res: Response) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/categories', categoryRoutes);

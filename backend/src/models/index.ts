@@ -13,3 +13,4 @@ export { default as Payment } from './Payment.js';
 export { default as Review } from './Review.js';
 export { default as Wishlist } from './Wishlist.js';
 export { default as Coupon } from './Coupon.js';
+export { default as StoreSettings } from './StoreSettings.js';

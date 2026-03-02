@@ -50,3 +50,6 @@ rules.md
 # Documentation and agent files
 *.md
 *.agent
+
+# Backend uploads
+backend/uploads/
