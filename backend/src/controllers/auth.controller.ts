@@ -73,6 +73,7 @@ export const register = async (
       phone: user.phone,
       isVerified: user.isVerified,
       authProvider: user.authProvider,
+      image: user.image,
       createdAt: user.createdAt,
     };
 
@@ -153,6 +154,7 @@ export const login = async (
       phone: user.phone,
       isVerified: user.isVerified,
       authProvider: user.authProvider,
+      image: user.image,
       createdAt: user.createdAt,
     };
     if (user.role === 'seller') {
@@ -200,6 +202,7 @@ export const getMe = async (
       phone: user.phone,
       isVerified: user.isVerified,
       authProvider: user.authProvider,
+      image: user.image,
       createdAt: user.createdAt,
     };
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, updateProfile, forgotPassword, resetPassword, changePassword } from '../controllers/auth.controller.js';
+import { register, login, getMe, updateProfile, forgotPassword, resetPassword, changePassword } from '../controllers/auth.controller.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { registerSchema, loginSchema } from '../validators/auth.validators.js';
 import { protect } from '../middleware/auth.middleware.js';
@@ -15,6 +15,8 @@ router.post('/logout', protect, (req, res) => {
     message: 'Logged out successfully'
   });
 });
+router.get('/me', protect, getMe);
+router.get('/:id', protect, getMe);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.post('/change-password', protect, changePassword);

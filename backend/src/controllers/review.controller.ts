@@ -19,6 +19,7 @@ export const getProductReviews = asyncHandler(async (req: Request, res: Response
   const [reviews, total] = await Promise.all([
     Review.find({ productId })
       .populate('userId', 'name')
+      .populate('productId', 'title images price discountPrice')
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 }),
