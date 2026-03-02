@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/auth-store';
+import Link from 'next/link';
 import {
   TrendingUp,
   Package,
   ShoppingCart,
   Users,
   Store,
-  DollarSign,
+  Coins,
   ArrowUpRight,
   ArrowDownRight,
 } from 'lucide-react';
@@ -36,6 +37,26 @@ interface RecentOrder {
   date: string;
 }
 
+interface OrderItem {
+  productId?: {
+    title?: string;
+  };
+}
+
+interface DashboardOrder {
+  _id: string;
+  userId?: {
+    name?: string;
+  };
+  items?: OrderItem[];
+  orderItems?: OrderItem[];
+  totalAmount: number;
+  orderStatus?: string;
+  status?: string;
+  paymentStatus?: string;
+  createdAt: string;
+}
+
 export default function AdminDashboardPage() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<Stats>({
@@ -52,11 +73,8 @@ export default function AdminDashboardPage() {
     pendingOrders: 0,
   });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [olderOrdersHiddenCount, setOlderOrdersHiddenCount] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -67,13 +85,13 @@ export default function AdminDashboardPage() {
         fetch('http://localhost:5000/api/products', {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/orders/admin/all', {
+        fetch('http://localhost:5000/api/orders/admin/all?limit=100', {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/users?role=customer', {
+        fetch('http://localhost:5000/api/users?role=customer&limit=1', {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('http://localhost:5000/api/users?role=seller', {
+        fetch('http://localhost:5000/api/users?role=seller&limit=1', {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -85,39 +103,60 @@ export default function AdminDashboardPage() {
 
       // Extract data safely
       const products = Array.isArray(productsData.data?.products) ? productsData.data.products : [];
-      const orders = Array.isArray(ordersData.data) ? ordersData.data : [];
-      const customers = Array.isArray(customersData.data) ? customersData.data : [];
-      const sellers = Array.isArray(sellersData.data) ? sellersData.data : [];
+      const orders: DashboardOrder[] = Array.isArray(ordersData.data?.orders)
+        ? ordersData.data.orders
+        : [];
+      const customersTotal = customersData.data?.pagination?.total
+        ?? (Array.isArray(customersData.data?.users) ? customersData.data.users.length : 0);
+      const sellersTotal = sellersData.data?.pagination?.total
+        ?? (Array.isArray(sellersData.data?.users) ? sellersData.data.users.length : 0);
 
       // Calculate total revenue
-      const totalRevenue = orders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
+      const totalRevenue = orders.reduce((sum: number, order) => sum + order.totalAmount, 0);
 
       // Count pending orders
       const pendingOrders = orders.filter(
-        (order: any) => order.status === 'pending' || order.status === 'processing'
+        (order) => {
+          const currentStatus = (order.orderStatus || order.status || '').toLowerCase();
+
+          return (
+            currentStatus === 'placed'
+            || currentStatus === 'confirmed'
+            || currentStatus === 'pending'
+            || currentStatus === 'processing'
+          );
+        }
       ).length;
 
       setStats({
         totalRevenue,
         revenueChange: 12.5, // TODO: Calculate from previous period
-        totalOrders: orders.length,
+        totalOrders: ordersData.data?.pagination?.total || orders.length,
         ordersChange: 8.3, // TODO: Calculate from previous period
         totalProducts: products.length,
         productsChange: 5.2, // TODO: Calculate from previous period
-        totalCustomers: customers.length,
+        totalCustomers: customersTotal,
         customersChange: 15.8, // TODO: Calculate from previous period
-        totalSellers: sellers.length,
+        totalSellers: sellersTotal,
         sellersChange: 3.2, // TODO: Calculate from previous period
         pendingOrders,
       });
 
-      // Map recent orders (last 5)
-      const mappedOrders: RecentOrder[] = orders.slice(0, 5).map((order: any) => ({
+      // Map orders from last 24 hours only
+      const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+      const ordersForDisplay = orders
+        .filter((order) => new Date(order.createdAt).getTime() >= twentyFourHoursAgo)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+
+      setOlderOrdersHiddenCount(Math.max(orders.length - ordersForDisplay.length, 0));
+
+      const mappedOrders: RecentOrder[] = ordersForDisplay.map((order) => ({
         id: order._id,
         customer: order.userId?.name || 'Guest',
-        product: order.items?.[0]?.productId?.title || 'Product',
+        product: order.orderItems?.[0]?.productId?.title || order.items?.[0]?.productId?.title || 'Product',
         amount: order.totalAmount,
-        status: order.status,
+        status: order.orderStatus || order.status || 'N/A',
         date: new Date(order.createdAt).toLocaleDateString(),
       }));
 
@@ -129,12 +168,17 @@ export default function AdminDashboardPage() {
     }
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchDashboardData();
+  }, []);
+
   const statCards = [
     {
       title: 'Total Revenue',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
+      value: `NPR ${stats.totalRevenue.toLocaleString()}`,
       change: stats.revenueChange,
-      icon: DollarSign,
+      icon: Coins,
       color: 'bg-green-500',
     },
     {
@@ -203,7 +247,7 @@ export default function AdminDashboardPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">
-          Welcome back, {user?.name}! Here's what's happening with your store.
+          Welcome back, {user?.name}! Here&apos;s what&apos;s happening with your store.
         </p>
       </div>
 
@@ -259,6 +303,10 @@ export default function AdminDashboardPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
+          <p className="text-xs text-gray-500 mt-1">
+            Showing only orders from the last 24 hours.
+            {olderOrdersHiddenCount > 0 ? ` ${olderOrdersHiddenCount} older order(s) hidden.` : ''}
+          </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -285,34 +333,42 @@ export default function AdminDashboardPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {order.id}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {order.customer}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {order.product}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${order.amount.toFixed(2)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
-                        order.status
-                      )}`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {order.date}
+              {recentOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
+                    No orders in the last 24 hours.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {order.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {order.customer}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                      {order.product}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      NPR {order.amount.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                          order.status
+                        )}`}
+                      >
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {order.date}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -320,7 +376,10 @@ export default function AdminDashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <button className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105">
+        <Link
+          href="/admin/products"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 block"
+        >
           <Package className="w-8 h-8 text-blue-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900">
             Manage Products
@@ -328,17 +387,23 @@ export default function AdminDashboardPage() {
           <p className="mt-1 text-sm text-gray-600">
             Add, edit, or remove products
           </p>
-        </button>
+        </Link>
 
-        <button className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105">
+        <Link
+          href="/admin/orders"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 block"
+        >
           <ShoppingCart className="w-8 h-8 text-green-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900">View Orders</h3>
           <p className="mt-1 text-sm text-gray-600">
             Process and track orders
           </p>
-        </button>
+        </Link>
 
-        <button className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105">
+        <Link
+          href="/admin/sellers"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 block"
+        >
           <Store className="w-8 h-8 text-purple-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900">
             Manage Sellers
@@ -346,9 +411,12 @@ export default function AdminDashboardPage() {
           <p className="mt-1 text-sm text-gray-600">
             Review and manage sellers
           </p>
-        </button>
+        </Link>
 
-        <button className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105">
+        <Link
+          href="/admin/customers"
+          className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all hover:scale-105 block"
+        >
           <Users className="w-8 h-8 text-orange-600 mb-3" />
           <h3 className="text-lg font-semibold text-gray-900">
             View Customers
@@ -356,7 +424,7 @@ export default function AdminDashboardPage() {
           <p className="mt-1 text-sm text-gray-600">
             Manage customer accounts
           </p>
-        </button>
+        </Link>
       </div>
     </div>
   );
