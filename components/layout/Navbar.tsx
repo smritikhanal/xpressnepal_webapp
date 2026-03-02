@@ -17,7 +17,8 @@ import {
   MapPin,
   Settings,
   Sparkles,
-  Home
+  Home,
+  MessageSquare
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth-store';
 import { useCartStore } from '@/store/cart-store';
@@ -34,7 +35,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useEffect, useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { normalizeImageUrl } from '@/lib/utils';
 
 export default function Navbar() {
   const router = useRouter();
@@ -43,6 +45,7 @@ export default function Navbar() {
   const { getItemCount: getWishlistCount, fetchWishlist, items: wishlistItems } = useWishlistStore();
   const [cartCount, setCartCount] = useState(0);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
@@ -61,6 +64,31 @@ export default function Navbar() {
       fetchWishlist();
     }
   }, [isAuthenticated, fetchWishlist]);
+
+  // Fetch unread messages count
+  useEffect(() => {
+    const fetchUnreadMessages = async () => {
+      if (isAuthenticated) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch('http://localhost:5000/api/messages/unread', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const data = await response.json();
+          if (data.success) {
+            setUnreadMessagesCount(data.data.count || 0);
+          }
+        } catch (error) {
+          console.error('Error fetching unread messages:', error);
+        }
+      }
+    };
+
+    fetchUnreadMessages();
+    // Poll for new messages every 30 seconds
+    const interval = setInterval(fetchUnreadMessages, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // Update counts when cart or wishlist changes
   useEffect(() => {
@@ -228,6 +256,7 @@ export default function Navbar() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-3 px-2">
                           <Avatar className="h-10 w-10 border-2 border-primary/20">
+                            {user?.image && <AvatarImage src={normalizeImageUrl(user.image)} alt={user?.name || 'User'} />}
                             <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-semibold">
                               {user?.name ? getInitials(user.name) : 'U'}
                             </AvatarFallback>
@@ -345,6 +374,24 @@ export default function Navbar() {
               </div>
             )}
 
+            {/* Messages */}
+            {mounted && isAuthenticated && (
+              <Link href="/messages">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all duration-200 group"
+                >
+                  <MessageSquare className="h-5 w-5 group-hover:text-red-500 transition-colors" />
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-[10px] font-bold text-white bg-gradient-to-r from-red-500 to-rose-500 rounded-full shadow-lg animate-in zoom-in duration-200">
+                      {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            )}
+
             {/* Wishlist */}
             <Link href="/wishlist">
               <Button
@@ -387,6 +434,7 @@ export default function Navbar() {
                       className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full pl-2 pr-4 h-10"
                     >
                       <Avatar className="h-8 w-8 border-2 border-primary/20">
+                        {user?.image && <AvatarImage src={normalizeImageUrl(user.image)} alt={user?.name || 'User'} />}
                         <AvatarFallback className="bg-gradient-to-br from-primary/30 to-accent/30 text-sm font-semibold">
                           {user?.name ? getInitials(user.name) : 'U'}
                         </AvatarFallback>
@@ -398,6 +446,7 @@ export default function Navbar() {
                     <DropdownMenuLabel className="pb-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12 border-2 border-primary/20">
+                          {user?.image && <AvatarImage src={normalizeImageUrl(user.image)} alt={user?.name || 'User'} />}
                           <AvatarFallback className="bg-gradient-to-br from-primary/20 to-accent/20 font-semibold">
                             {user?.name ? getInitials(user.name) : 'U'}
                           </AvatarFallback>
@@ -415,18 +464,18 @@ export default function Navbar() {
                         My Profile
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                    {/* <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                       <Link href="/orders" className="flex items-center gap-3 py-2">
                         <Package className="h-4 w-4 text-orange-500" />
                         My Orders
                       </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
+                    </DropdownMenuItem> */}
+                    {/* <DropdownMenuItem asChild className="rounded-lg cursor-pointer">
                       <Link href="/user/profile?tab=addresses" className="flex items-center gap-3 py-2">
                         <MapPin className="h-4 w-4 text-green-500" />
                         My Addresses
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     {user?.role === 'admin' && (
                       <>
                         <DropdownMenuSeparator />

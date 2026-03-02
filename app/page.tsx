@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCartStore } from "@/store/cart-store";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Truck, 
   Package,
@@ -356,6 +360,11 @@ const BlobCursor = () => {
 };
 
 export default function Home() {
+  const router = useRouter();
+  const { addItem: addToCart } = useCartStore();
+  const { addItem: addToWishlist, isInWishlist } = useWishlistStore();
+  const { toast } = useToast();
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [flashSaleProducts, setFlashSaleProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -948,6 +957,7 @@ export default function Home() {
                   <div className="absolute left-0 bottom-0 translate-y-full w-full flex items-center justify-center gap-2.5 pb-5 transition-transform duration-300 ease-out group-hover:translate-y-0">
                     {/* Quick View Button */}
                     <button 
+                      onClick={() => router.push(`/products/${product.slug}`)}
                       aria-label="Quick view"
                       className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-maroon dark:hover:text-maroon transition-colors duration-200"
                     >
@@ -955,17 +965,38 @@ export default function Home() {
                     </button>
                     
                     {/* Add to Cart Button */}
-                    <button className="inline-flex items-center font-medium text-sm py-2.5 px-5 rounded-full bg-maroon text-white hover:bg-maroon/90 transition-colors duration-200 shadow-lg">
+                    <button 
+                      onClick={async () => {
+                        const success = await addToCart(product._id, 1);
+                        if (success) {
+                          toast({
+                            title: 'Added to cart',
+                            description: `${product.title} has been added to your cart`,
+                          });
+                        }
+                      }}
+                      disabled={product.stock === 0}
+                      className="inline-flex items-center font-medium text-sm py-2.5 px-5 rounded-full bg-maroon text-white hover:bg-maroon/90 transition-colors duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       <ShoppingCart className="w-4 h-4 mr-2" />
-                      Add to cart
+                      {product.stock === 0 ? 'Out of Stock' : 'Add to cart'}
                     </button>
                     
                     {/* Favorite Button */}
                     <button 
+                      onClick={async () => {
+                        await addToWishlist(product);
+                        toast({
+                          title: isInWishlist(product._id) ? 'Already in wishlist' : 'Added to wishlist',
+                          description: isInWishlist(product._id) 
+                            ? `${product.title} is already in your wishlist` 
+                            : `${product.title} has been added to your wishlist`,
+                        });
+                      }}
                       aria-label="Add to wishlist"
                       className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:text-pink-500 transition-colors duration-200"
                     >
-                      <Heart className="w-5 h-5" />
+                      <Heart className={`w-5 h-5 ${isInWishlist(product._id) ? 'fill-pink-500 text-pink-500' : ''}`} />
                     </button>
                   </div>
 

@@ -12,13 +12,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 import apiClient from '@/lib/api-client';
 import Image from 'next/image';
 import { Address } from '@/types';
 
 const profileSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    phone: z.string().optional(),
+    phone: z.string()
+        .optional()
+        .refine((val) => !val || /^\d{10}$/.test(val), {
+            message: 'Phone number must be exactly 10 digits',
+        }),
     shopName: z.string().optional(),
     businessDescription: z.string().optional(),
 });
@@ -202,6 +207,7 @@ export default function UserProfilePage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, setUser, setAuth, clearAuth } = useAuthStore();
+    const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
@@ -234,6 +240,29 @@ export default function UserProfilePage() {
     });
     const [addressError, setAddressError] = useState('');
     const [addressSuccess, setAddressSuccess] = useState('');
+
+    // Messages state
+    interface MessageType {
+        _id: string;
+        senderId: {
+            _id: string;
+            name: string;
+            email: string;
+            shopName?: string;
+        };
+        productId?: {
+            _id: string;
+            title: string;
+            slug: string;
+        };
+        subject: string;
+        message: string;
+        isRead: boolean;
+        createdAt: string;
+    }
+    const [messages, setMessages] = useState<MessageType[]>([]);
+    const [messagesLoading, setMessagesLoading] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState<MessageType | null>(null);
 
     const {
         register,
@@ -277,9 +306,55 @@ export default function UserProfilePage() {
         }
     };
 
+    const fetchMessages = async () => {
+        setMessagesLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('http://localhost:5000/api/messages/inbox', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                setMessages(data.data.messages || []);
+            }
+        } catch (err) {
+            console.error('Failed to fetch messages', err);
+        } finally {
+            setMessagesLoading(false);
+        }
+    };
+
+    const markMessageAsRead = async (messageId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`http://localhost:5000/api/messages/${messageId}/read`, {
+                method: 'PATCH',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            // Update local state
+            setMessages(messages.map(msg =>
+                msg._id === messageId ? { ...msg, isRead: true } : msg
+            ));
+        } catch (err) {
+            console.error('Failed to mark message as read', err);
+        }
+    };
+
+    const handleMessageClick = (message: MessageType) => {
+        setSelectedMessage(message);
+        if (!message.isRead) {
+            markMessageAsRead(message._id);
+        }
+    };
+
     useEffect(() => {
         if (activeTab === 'addresses' && user) {
             fetchAddresses();
+        }
+        if (activeTab === 'messages' && user) {
+            fetchMessages();
         }
     }, [activeTab]);
 
@@ -309,18 +384,28 @@ export default function UserProfilePage() {
             if (data.businessDescription) formData.append('businessDescription', data.businessDescription);
             if (imageFile) formData.append('image', imageFile);
 
-            const response = await apiClient.user.updateProfile(user._id, formData);
+            const response = await apiClient.user.updateProfile(user.id, formData);
 
             if (response.data.success) {
                 const currentToken = useAuthStore.getState().token;
                 if (currentToken && response.data.data) {
                     setAuth(response.data.data, currentToken);
                 }
-                setSuccess('Profile updated successfully!');
+                toast({
+                    title: 'Success',
+                    description: 'Profile updated successfully!',
+                    variant: 'default',
+                });
             }
         } catch (err: any) {
             console.error(err);
-            setError(err.response?.data?.message || 'Failed to update profile');
+            const errorMsg = err.response?.data?.message || 'Failed to update profile';
+            toast({
+                title: 'Error',
+                description: errorMsg,
+                variant: 'destructive',
+            });
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -474,7 +559,7 @@ export default function UserProfilePage() {
                                         onClick={() => setShowSellerModal(true)}
                                         className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-medium rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all"
                                     >
-                                        🚀 Become a Seller
+                                        Become a Seller
                                     </button>
                                 )}
                             </div>
@@ -525,6 +610,17 @@ export default function UserProfilePage() {
                                 </button>
 
                                 <button
+                                    onClick={() => setActiveTab('messages')}
+                                    className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'messages'
+                                        ? 'bg-blue-50 text-blue-600'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <Mail className="w-5 h-5 mr-3" />
+                                    Messages
+                                </button>
+
+                                <button
                                     onClick={() => setActiveTab('security')}
                                     className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === 'security'
                                         ? 'bg-blue-50 text-blue-600'
@@ -568,12 +664,7 @@ export default function UserProfilePage() {
 
                     {/* Main Content */}
                     <div className="lg:col-span-3">
-                        {/* Success/Error Messages */}
-                        {success && (
-                            <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-                                <p className="text-sm text-green-600">{success}</p>
-                            </div>
-                        )}
+                        {/* Error Messages */}
                         {error && (
                             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
                                 <p className="text-sm text-red-600">{error}</p>
@@ -631,8 +722,15 @@ export default function UserProfilePage() {
                                             <Label htmlFor="phone">Phone Number</Label>
                                             <div className="relative">
                                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                                <Input id="phone" {...register('phone')} className="pl-10" />
+                                                <Input 
+                                                    id="phone" 
+                                                    {...register('phone')} 
+                                                    className="pl-10" 
+                                                    placeholder="10 digit phone number"
+                                                    maxLength={10}
+                                                />
                                             </div>
+                                            {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
                                         </div>
                                     </div>
 
@@ -839,6 +937,122 @@ export default function UserProfilePage() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Messages Tab */}
+                        {activeTab === 'messages' && (
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                                    Messages from Sellers
+                                </h2>
+
+                                {messagesLoading ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                                    </div>
+                                ) : messages.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <Mail className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-gray-600">No messages yet</p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Message List */}
+                                        <div className="lg:col-span-1">
+                                            <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                                                {messages.map((msg) => (
+                                                    <button
+                                                        key={msg._id}
+                                                        onClick={() => handleMessageClick(msg)}
+                                                        className={`w-full text-left p-4 rounded-lg border transition-colors ${
+                                                            selectedMessage?._id === msg._id
+                                                                ? 'bg-blue-50 border-blue-200'
+                                                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                {!msg.isRead && (
+                                                                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                                                )}
+                                                                <p className="font-semibold text-gray-900 text-sm truncate">
+                                                                    {msg.senderId ? (msg.senderId.shopName || msg.senderId.name) : 'Unknown Sender'}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-sm font-medium text-gray-700 truncate mb-1">
+                                                            {msg.subject}
+                                                        </p>
+                                                        {msg.productId && (
+                                                            <p className="text-xs text-gray-500 truncate">
+                                                                {msg.productId.title}
+                                                            </p>
+                                                        )}
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            {new Date(msg.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Message Detail */}
+                                        <div className="lg:col-span-2">
+                                            {selectedMessage ? (
+                                                <div className="border border-gray-200 rounded-lg p-6">
+                                                    <div className="mb-6 pb-6 border-b">
+                                                        <h3 className="text-lg font-bold text-gray-900 mb-2">
+                                                            {selectedMessage.subject}
+                                                        </h3>
+                                                        <div className="text-sm text-gray-600 space-y-1">
+                                                            <p>
+                                                                <strong>From:</strong> {selectedMessage.senderId ? (selectedMessage.senderId.shopName || selectedMessage.senderId.name) : 'Unknown Sender'}
+                                                            </p>
+                                                            <p>
+                                                                <strong>Email:</strong> {selectedMessage.senderId?.email || 'N/A'}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                {new Date(selectedMessage.createdAt).toLocaleString('en-US', {
+                                                                    dateStyle: 'full',
+                                                                    timeStyle: 'short',
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {selectedMessage.productId && (
+                                                        <Link
+                                                            href={`/products/${selectedMessage.productId.slug}`}
+                                                            className="block mb-6 p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-2 text-sm">
+                                                                <ShoppingBag className="w-4 h-4 text-blue-600" />
+                                                                <span className="font-medium">Product:</span>
+                                                                <span className="text-blue-600 hover:underline">
+                                                                    {selectedMessage.productId.title}
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                    )}
+
+                                                    <div className="prose max-w-none">
+                                                        <p className="text-gray-700 whitespace-pre-wrap">
+                                                            {selectedMessage.message}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-center h-full border border-gray-200 rounded-lg">
+                                                    <div className="text-center text-gray-500">
+                                                        <Mail className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                                                        <p>Select a message to view</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
                             </div>
