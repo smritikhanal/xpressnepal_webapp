@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Package, Truck, MapPin, CreditCard, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Package, Truck, MapPin, CreditCard, ArrowLeft, Star, X } from 'lucide-react';
 import DeliveryTracking from '@/components/DeliveryTracking';
 import { useSocket } from '@/hooks/use-socket';
+import { Button } from '@/components/ui/button';
 import toast from 'react-hot-toast';
 
 interface OrderItem {
@@ -62,6 +63,12 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{ productId: string; title: string } | null>(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     fetchOrderDetails();
@@ -207,6 +214,54 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleWriteReview = (productId: string, productTitle: string) => {
+    setSelectedProduct({ productId, title: productTitle });
+    setReviewModalOpen(true);
+    setRating(0);
+    setHoverRating(0);
+    setComment('');
+  };
+
+  const handleSubmitReview = async () => {
+    if (!selectedProduct || rating === 0 || !comment.trim()) {
+      toast.error('Please provide a rating and comment');
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId: selectedProduct.productId,
+          rating,
+          comment,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Review submitted successfully!');
+        setReviewModalOpen(false);
+        setSelectedProduct(null);
+        setRating(0);
+        setComment('');
+      } else {
+        toast.error(data.message || 'Failed to submit review');
+      }
+    } catch (err) {
+      console.error('Error submitting review:', err);
+      toast.error('An error occurred while submitting review');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -236,6 +291,15 @@ export default function OrderDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Back</span>
+        </button>
+
         {/* Success Message */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border-l-4 border-green-500">
           <div className="flex items-center">
@@ -360,9 +424,21 @@ export default function OrderDetailPage() {
                       <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">NPR {item.price.toFixed(2)}</p>
-                    <p className="text-sm text-gray-600">each</p>
+                  <div className="text-right flex items-center gap-4">
+                    <div>
+                      <p className="font-medium text-gray-900">NPR {item.price.toFixed(2)}</p>
+                      <p className="text-sm text-gray-600">each</p>
+                    </div>
+                    {order.orderStatus === 'delivered' && (
+                      <Button
+                        onClick={() => handleWriteReview(item.productId, item.title)}
+                        className="bg-green-600 hover:bg-green-700 flex items-center gap-2 whitespace-nowrap"
+                        size="sm"
+                      >
+                        <Star className="w-4 h-4" />
+                        Review
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -394,6 +470,103 @@ export default function OrderDetailPage() {
             Continue Shopping
           </Link>
         </div>
+
+        {/* Review Modal */}
+        {reviewModalOpen && selectedProduct && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">Write a Review</h2>
+                <button
+                  onClick={() => setReviewModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6">
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 mb-1">Product</p>
+                  <p className="font-medium text-gray-900">{selectedProduct.title}</p>
+                </div>
+
+                {/* Star Rating */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Rating <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="transition-transform hover:scale-110 focus:outline-none"
+                      >
+                        <Star
+                          className={`w-10 h-10 ${
+                            star <= (hoverRating || rating)
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
+                          } transition-colors`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  {rating > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {rating === 1 && 'Poor'}
+                      {rating === 2 && 'Fair'}
+                      {rating === 3 && 'Good'}
+                      {rating === 4 && 'Very Good'}
+                      {rating === 5 && 'Excellent'}
+                    </p>
+                  )}
+                </div>
+
+                {/* Comment */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Your Review <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Share your experience with this product and seller..."
+                    rows={5}
+                    maxLength={500}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {comment.length}/500 characters
+                  </p>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setReviewModalOpen(false)}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={submittingReview}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmitReview}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    disabled={submittingReview || rating === 0 || !comment.trim()}
+                  >
+                    {submittingReview ? 'Submitting...' : 'Submit Review'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
