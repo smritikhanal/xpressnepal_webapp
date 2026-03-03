@@ -77,7 +77,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
-      setFinalPrice(product.discountPrice || product.price);
+      setFinalPrice(product.price);
     }
   }, [product]);
 
@@ -323,7 +323,7 @@ export default function ProductDetailPage() {
   }
 
   const discount = product.discountPrice 
-    ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+    ? Math.round(((product.discountPrice - product.price) / product.discountPrice) * 100)
     : 0;
 
   return (
@@ -515,15 +515,15 @@ export default function ProductDetailPage() {
                 <span className="text-5xl font-bold text-primary">
                   NPR {finalPrice.toLocaleString()}
                 </span>
-                {product.discountPrice && finalPrice === (product.discountPrice || product.price) && (
+                {product.discountPrice && product.discountPrice > product.price && (
                   <span className="text-2xl text-muted-foreground line-through">
-                    NPR {product.price.toLocaleString()}
+                    NPR {product.discountPrice.toLocaleString()}
                   </span>
                 )}
               </div>
-              {discount > 0 && finalPrice === (product.discountPrice || product.price) && (
+              {discount > 0 && product.discountPrice && product.discountPrice > product.price && (
                 <p className="text-sm text-green-600 font-semibold mt-2">
-                  You save NPR {(product.price - (product.discountPrice || product.price)).toLocaleString()}
+                  You save NPR {(product.discountPrice - product.price).toLocaleString()}
                 </p>
               )}
             </div>
@@ -548,7 +548,7 @@ export default function ProductDetailPage() {
             {/* Product Attributes */}
             <ProductAttributeSelector
               attributes={product.attributes}
-              basePrice={product.discountPrice || product.price}
+              basePrice={product.price}
               onPriceChange={setFinalPrice}
             />
 
@@ -959,11 +959,11 @@ export default function ProductDetailPage() {
                         </div>
                         <div className="flex items-baseline gap-2">
                           <span className="text-2xl font-bold text-primary">
-                            NPR {(relatedProduct.discountPrice || relatedProduct.price).toLocaleString()}
+                            NPR {relatedProduct.price.toLocaleString()}
                           </span>
-                          {relatedProduct.discountPrice && (
+                          {relatedProduct.discountPrice && relatedProduct.discountPrice > relatedProduct.price && (
                             <span className="text-sm text-muted-foreground line-through">
-                              NPR {relatedProduct.price.toLocaleString()}
+                              NPR {relatedProduct.discountPrice.toLocaleString()}
                             </span>
                           )}
                         </div>

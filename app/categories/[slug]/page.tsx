@@ -300,10 +300,10 @@ export default function CategoryPage() {
                         : 'aspect-square'
                     }`}
                   >
-                    {product.discountPrice && product.discountPrice < product.price && (
+                    {product.discountPrice && product.discountPrice > product.price && (
                       <Badge className="absolute top-2 left-2 bg-primary text-white z-10">
                         {Math.round(
-                          ((product.price - product.discountPrice) / product.price) * 100
+                          ((product.discountPrice - product.price) / product.discountPrice) * 100
                         )}
                         % OFF
                       </Badge>
@@ -337,13 +337,13 @@ export default function CategoryPage() {
 
                     <CardContent className="space-y-3">
                       <div className="flex items-baseline gap-2">
-                        {product.discountPrice && product.discountPrice < product.price ? (
+                        {product.discountPrice && product.discountPrice > product.price ? (
                           <>
                             <span className="text-lg font-bold text-primary">
-                              NPR {product.discountPrice.toFixed(0)}
+                              NPR {product.price.toFixed(0)}
                             </span>
                             <span className="text-sm text-muted-foreground line-through">
-                              NPR {product.price.toFixed(0)}
+                              NPR {product.discountPrice.toFixed(0)}
                             </span>
                           </>
                         ) : (

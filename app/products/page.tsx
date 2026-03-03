@@ -384,9 +384,9 @@ export default function ProductsPage() {
             >
               <AnimatePresence mode="popLayout">
                 {products.map((product, index) => {
-                  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+                  const hasDiscount = product.discountPrice && product.discountPrice > product.price;
                   const discountPct = hasDiscount
-                    ? Math.round(((product.price - product.discountPrice!) / product.price) * 100)
+                    ? Math.round(((product.discountPrice! - product.price) / product.discountPrice!) * 100)
                     : 0;
                   const wishlisted = isInWishlist(product._id);
                   const justAdded = addedId === product._id;
@@ -438,10 +438,10 @@ export default function ProductsPage() {
                               <div className="flex items-center justify-between mt-2">
                                 <div className="flex items-baseline gap-2">
                                   <span className="text-base font-black text-gray-900">
-                                    NPR {(hasDiscount ? product.discountPrice! : product.price).toLocaleString()}
+                                    NPR {product.price.toLocaleString()}
                                   </span>
                                   {hasDiscount && (
-                                    <span className="text-xs text-gray-400 line-through">NPR {product.price.toLocaleString()}</span>
+                                    <span className="text-xs text-gray-400 line-through">NPR {product.discountPrice!.toLocaleString()}</span>
                                   )}
                                 </div>
                                 <button
@@ -562,11 +562,11 @@ export default function ProductsPage() {
                             {/* Price */}
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-base font-black text-gray-900">
-                                NPR {(hasDiscount ? product.discountPrice! : product.price).toLocaleString()}
+                                NPR {product.price.toLocaleString()}
                               </span>
                               {hasDiscount && (
                                 <span className="text-xs text-gray-400 line-through">
-                                  NPR {product.price.toLocaleString()}
+                                  NPR {product.discountPrice!.toLocaleString()}
                                 </span>
                               )}
                             </div>
