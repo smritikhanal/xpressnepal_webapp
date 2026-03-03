@@ -59,6 +59,8 @@ export default function CheckoutPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingAddressId, setDeletingAddressId] = useState<string | null>(null);
   
   // Delivery scheduling
   const [deliveryDate, setDeliveryDate] = useState<string>('');
@@ -267,14 +269,17 @@ export default function CheckoutPage() {
     setShowAddressForm(true);
   };
 
-  const handleDeleteAddress = async (addressId: string) => {
-    if (!confirm('Are you sure you want to delete this address?')) {
-      return;
-    }
+  const handleDeleteAddress = (addressId: string) => {
+    setDeletingAddressId(addressId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteAddress = async () => {
+    if (!deletingAddressId) return;
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/addresses/${addressId}`, {
+      const response = await fetch(`http://localhost:5000/api/addresses/${deletingAddressId}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -283,10 +288,12 @@ export default function CheckoutPage() {
 
       const data = await response.json();
       if (data.success) {
-        setAddresses(addresses.filter(addr => addr._id !== addressId));
-        if (selectedAddressId === addressId) {
+        setAddresses(addresses.filter(addr => addr._id !== deletingAddressId));
+        if (selectedAddressId === deletingAddressId) {
           setSelectedAddressId(addresses.length > 1 ? addresses[0]._id : '');
         }
+        setShowDeleteDialog(false);
+        setDeletingAddressId(null);
         toast({
           title: 'Success',
           description: 'Address deleted successfully',
@@ -761,6 +768,37 @@ export default function CheckoutPage() {
             </Card>
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Address</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-muted-foreground">
+                Are you sure you want to delete this address? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setDeletingAddressId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDeleteAddress}
+              >
+                Delete
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
