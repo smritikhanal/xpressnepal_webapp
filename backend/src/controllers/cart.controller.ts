@@ -69,7 +69,7 @@ export const addToCart = asyncHandler(async (req: Request, res: Response) => {
     cart.items.push({
       productId,
       quantity,
-      priceAtTime: product.discountPrice || product.price,
+      priceAtTime: product.price,
     });
   }
 

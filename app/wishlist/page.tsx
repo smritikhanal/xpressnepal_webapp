@@ -166,9 +166,9 @@ export default function WishlistPage() {
                         className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
                       />
                       {/* Discount Badge */}
-                      {product.discountPrice && (
+                      {product.discountPrice && product.discountPrice > product.price && (
                         <Badge className="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-0.5">
-                          {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% OFF
+                          {Math.round(((product.discountPrice - product.price) / product.discountPrice) * 100)}% OFF
                         </Badge>
                       )}
                     </div>
@@ -223,11 +223,11 @@ export default function WishlistPage() {
                     {/* Price — fixed height */}
                     <div className="flex items-baseline gap-2 min-h-8">
                       <span className="text-lg font-bold text-primary">
-                        NPR {(product.discountPrice || product.price).toLocaleString()}
+                        NPR {product.price.toLocaleString()}
                       </span>
-                      {product.discountPrice && (
+                      {product.discountPrice && product.discountPrice > product.price && (
                         <span className="text-xs text-muted-foreground line-through">
-                          NPR {product.price.toLocaleString()}
+                          NPR {product.discountPrice.toLocaleString()}
                         </span>
                       )}
                     </div>
