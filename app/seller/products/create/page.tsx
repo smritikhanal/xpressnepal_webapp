@@ -181,9 +181,11 @@ export default function SellerCreateProductPage() {
         },
         body: JSON.stringify({
           ...formData,
-          price: Number(formData.price),
+          price: formData.discountPrice
+            ? Math.max(Number(formData.price) - Number(formData.discountPrice), 0)
+            : Number(formData.price),
           discountPrice: formData.discountPrice
-            ? Number(formData.discountPrice)
+            ? Number(formData.price)
             : undefined,
           stock: Number(formData.stock),
         }),

@@ -99,16 +99,31 @@ export default function EditProductPage() {
           typeof product.categoryId === 'string'
             ? product.categoryId
             : product.categoryId?._id || '';
-        const discountAmount =
-          product.discountPrice && product.discountPrice < product.price
-            ? product.price - product.discountPrice
-            : 0;
+        
+        // Handle both old and new price formats
+        let originalPrice: number;
+        let discountAmount: number;
+        
+        if (product.discountPrice) {
+          if (product.discountPrice > product.price) {
+            // New format: price is final, discountPrice is original
+            originalPrice = product.discountPrice;
+            discountAmount = product.discountPrice - product.price;
+          } else {
+            // Old format: price is original, discountPrice is final
+            originalPrice = product.price;
+            discountAmount = product.price - product.discountPrice;
+          }
+        } else {
+          originalPrice = product.price;
+          discountAmount = 0;
+        }
 
         setFormData({
           title: product.title,
           slug: product.slug,
           description: product.description,
-          price: product.price.toString(),
+          price: originalPrice.toString(),
           discountPrice: discountAmount > 0 ? discountAmount.toString() : '',
           categoryId: selectedCategoryId,
           brand: product.brand || '',
@@ -246,9 +261,11 @@ export default function EditProductPage() {
           title: formData.title,
           slug: formData.slug,
           description: formData.description,
-          price: parseFloat(formData.price),
-          discountPrice: formData.discountPrice
+          price: formData.discountPrice
             ? Math.max(parseFloat(formData.price) - parseFloat(formData.discountPrice), 0)
+            : parseFloat(formData.price),
+          discountPrice: formData.discountPrice
+            ? parseFloat(formData.price)
             : undefined,
           categoryId: formData.categoryId,
           brand: formData.brand || undefined,
