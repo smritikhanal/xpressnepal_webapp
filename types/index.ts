@@ -26,6 +26,7 @@ export interface Category {
   description?: string;
   parentCategory?: string | Category;
   isActive: boolean;
+  productCount?: number;
   createdAt: string;
   updatedAt: string;
 }

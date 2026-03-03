@@ -35,17 +35,21 @@ export default function SearchPage() {
     setLoading(true);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      let url = `${backendUrl}/api/products?search=${encodeURIComponent(query)}`;
+      const params = new URLSearchParams();
+      params.append('search', query);
       
+      // Backend expects: newest, price_asc, price_desc, rating
       if (sortBy === 'price-low') {
-        url += '&sortBy=price&order=asc';
+        params.append('sort', 'price_asc');
       } else if (sortBy === 'price-high') {
-        url += '&sortBy=price&order=desc';
+        params.append('sort', 'price_desc');
       } else if (sortBy === 'rating') {
-        url += '&sortBy=ratingAvg&order=desc';
+        params.append('sort', 'rating');
+      } else {
+        params.append('sort', 'newest');
       }
 
-      const response = await fetch(url);
+      const response = await fetch(`${backendUrl}/api/products?${params.toString()}`);
       const data = await response.json();
       
       if (data.success) {

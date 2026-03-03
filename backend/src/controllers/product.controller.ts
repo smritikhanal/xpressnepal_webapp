@@ -39,9 +39,13 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
     if (maxPrice) (filter.price as Record<string, number>).$lte = Number(maxPrice);
   }
 
-  // Text search
+  // Text search - using regex for better partial matching
   if (search) {
-    filter.$text = { $search: search as string };
+    filter.$or = [
+      { title: { $regex: search as string, $options: 'i' } },
+      { description: { $regex: search as string, $options: 'i' } },
+      { brand: { $regex: search as string, $options: 'i' } },
+    ];
   }
 
   // Sort options
