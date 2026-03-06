@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,7 +31,8 @@ import {
   Clock,
   AlertCircle,
   Send,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { Product, Review } from '@/types';
 import { useAuthStore } from '@/store/auth-store';
@@ -42,6 +43,7 @@ import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -584,64 +586,84 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <Button
+                  size="lg"
+                  className="flex-1 h-14 text-lg rounded-2xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0}
+                >
+                  <AnimatePresence mode="wait">
+                    {addedToCart ? (
+                      <motion.div
+                        key="added"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Check className="h-6 w-6" />
+                        Added!
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="add"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <ShoppingCart className="h-6 w-6" />
+                        Add to Cart
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className={`h-14 w-14 rounded-2xl border-2 transition-all ${
+                    isWishlisted
+                      ? 'bg-red-50 border-red-300 hover:bg-red-100'
+                      : 'border-primary/20 hover:border-primary'
+                  }`}
+                  onClick={handleToggleWishlist}
+                >
+                  <Heart
+                    className={`h-6 w-6 transition-colors ${
+                      isWishlisted ? 'fill-red-500 text-red-500' : 'text-primary'
+                    }`}
+                  />
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 w-14 rounded-2xl border-2 border-primary/20 hover:border-primary"
+                  onClick={handleShare}
+                >
+                  <Share2 className="h-6 w-6 text-primary" />
+                </Button>
+              </div>
+              
+              {/* Buy Now Button */}
               <Button
                 size="lg"
-                className="flex-1 h-14 text-lg rounded-2xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
-                onClick={handleAddToCart}
+                className="w-full h-14 text-lg rounded-2xl bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl transition-all"
+                onClick={async () => {
+                  const success = await addItem(product._id, quantity);
+                  if (success) {
+                    router.push('/checkout');
+                  } else {
+                    toast.error('Failed to add item to cart');
+                  }
+                }}
                 disabled={product.stock === 0}
               >
-                <AnimatePresence mode="wait">
-                  {addedToCart ? (
-                    <motion.div
-                      key="added"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="flex items-center gap-2"
-                    >
-                      <Check className="h-6 w-6" />
-                      Added!
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="add"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="flex items-center gap-2"
-                    >
-                      <ShoppingCart className="h-6 w-6" />
-                      Add to Cart
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className={`h-14 w-14 rounded-2xl border-2 transition-all ${
-                  isWishlisted
-                    ? 'bg-red-50 border-red-300 hover:bg-red-100'
-                    : 'border-primary/20 hover:border-primary'
-                }`}
-                onClick={handleToggleWishlist}
-              >
-                <Heart
-                  className={`h-6 w-6 transition-colors ${
-                    isWishlisted ? 'fill-red-500 text-red-500' : 'text-primary'
-                  }`}
-                />
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 w-14 rounded-2xl border-2 border-primary/20 hover:border-primary"
-                onClick={handleShare}
-              >
-                <Share2 className="h-6 w-6 text-primary" />
+                <Zap className="h-6 w-6 mr-2" />
+                Buy Now
               </Button>
             </div>
 
