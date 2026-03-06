@@ -58,8 +58,7 @@ export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const orderId = params.id as string;
-  const { isConnected, on, off, trackOrder, untrackOrder } = useSocket();
-
+  const { isConnected, on, off, trackOrder, untrackOrder } = useSocket(); 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -331,7 +330,6 @@ export default function OrderDetailPage() {
           <DeliveryTracking
             orderId={order._id}
             orderStatus={order.orderStatus}
-            currentLocation={order.currentLocation}
             deliveryPersonnel={order.deliveryPersonnel}
           />
         </div>
