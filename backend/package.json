@@ -13,7 +13,9 @@
     "test:coverage": "jest --coverage --config jest.config.cjs",
     "test:verbose": "jest --verbose --config jest.config.cjs",
     "seed:admin": "tsx src/scripts/seedSuperAdmin.ts",
-    "fix:images": "tsx src/scripts/fix-image-urls.ts"
+    "fix:images": "tsx src/scripts/fix-image-urls.ts",
+    "check:images": "tsx src/scripts/fix-missing-images.ts",
+    "clean:missing-images": "tsx src/scripts/clean-missing-images.ts"
   },
   "keywords": [
     "ecommerce",

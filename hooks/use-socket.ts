@@ -94,7 +94,7 @@ export const useSocket = () => {
 
   return {
     socket: socketRef.current,
-    isConnected,
+    isConnected,  
     emit,
     on,
     off,
