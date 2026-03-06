@@ -21,10 +21,12 @@ import {
   X
 } from 'lucide-react';
 import { normalizeImageUrl } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CartPage() {
   const { user } = useAuthStore();
   const router = useRouter();
+  const { toast } = useToast();
   const { 
     cart, 
     loading, 
@@ -157,9 +159,11 @@ export default function CartPage() {
                     variant="outline" 
                     size="sm" 
                     onClick={() => {
-                      if (confirm('Clear all items from cart?')) {
-                        clearCart();
-                      }
+                      clearCart();
+                      toast({
+                        title: 'Cart cleared',
+                        description: 'All items have been removed from your cart',
+                      });
                     }}
                     className="text-red-600 hover:text-red-700"
                   >
@@ -251,9 +255,11 @@ export default function CartPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            if (confirm('Remove this item from cart?')) {
-                              removeItem(item.productId._id);
-                            }
+                            removeItem(item.productId._id);
+                            toast({
+                              title: 'Item removed',
+                              description: `${item.productId.title} has been removed from your cart`,
+                            });
                           }}
                           className="text-red-600 hover:text-red-700"
                         >

@@ -16,6 +16,7 @@ import {
   X,
   ShoppingBag,
   Mail,
+  Star,
 } from 'lucide-react';
 
 export default function SellerLayout({
@@ -58,6 +59,7 @@ export default function SellerLayout({
     { name: 'Dashboard', href: '/seller/dashboard', icon: LayoutDashboard },
     { name: 'Products', href: '/seller/products', icon: Package },
     { name: 'Orders', href: '/seller/orders', icon: ShoppingCart },
+    { name: 'Reviews', href: '/seller/reviews', icon: Star },
     { name: 'Messages', href: '/seller/messages', icon: Mail },
     { name: 'Profile', href: '/seller/profile', icon: User },
     { name: 'Settings', href: '/seller/settings', icon: Settings },

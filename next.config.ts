@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
       },
     ],
     dangerouslyAllowSVG: true,
+    unoptimized: false,
+    // Handle image loading errors gracefully
+    minimumCacheTTL: 60,
   },
   // Proxy /api-uploads to backend server
   async rewrites() {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
+import { useSocket } from '@/hooks/use-socket';
 import { Mail, Send as SendIcon, Package, User } from 'lucide-react';
 import Link from 'next/link';
 
@@ -43,19 +44,15 @@ interface Conversation {
 export default function SellerMessagesPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
+  const { on, off, isConnected } = useSocket();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchAllMessages();
-    }
-  }, [user]);
-
-  const fetchAllMessages = async () => {
+  const fetchAllMessages = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       
@@ -145,7 +142,49 @@ export default function SellerMessagesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty deps, fetchAllMessages doesn't need external dependencies
+
+  useEffect(() => {
+    if (user) {
+      fetchAllMessages();
+    }
+  }, [user, fetchAllMessages]);
+
+  // Real-time message updates via Socket.IO
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen for new messages
+    const handleNewMessage = (data: any) => {
+      console.log('New message received:', data);
+      // Refresh messages to get the latest data
+      fetchAllMessages();
+      
+      // Show toast notification if message is not from current user
+      if (data.senderId !== user?.id) {
+        toast({
+          title: 'New Message',
+          description: `You have a new message from a customer`,
+          variant: 'default',
+        });
+      }
+    };
+
+    on('message:new', handleNewMessage);
+
+    // Set up polling as fallback (every 30 seconds)
+    pollingIntervalRef.current = setInterval(() => {
+      fetchAllMessages();
+    }, 30000);
+
+    // Cleanup
+    return () => {
+      off('message:new', handleNewMessage);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [user, on, off, toast, fetchAllMessages]);
 
   const markAsRead = async (messageIds: string[]) => {
     try {

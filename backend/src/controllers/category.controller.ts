@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Category from '../models/Category.js';
+import Product from '../models/Product.js';
 import { asyncHandler, sendResponse, getPagination, ApiError } from '../utils/apiHelpers.js';
 
 /**
@@ -9,6 +10,7 @@ import { asyncHandler, sendResponse, getPagination, ApiError } from '../utils/ap
  */
 export const getCategories = asyncHandler(async (req: Request, res: Response) => {
   const { page, limit, skip } = getPagination(req.query);
+  const { withProductCount } = req.query;
   
   const [categories, total] = await Promise.all([
     Category.find({ isActive: true })
@@ -19,8 +21,25 @@ export const getCategories = asyncHandler(async (req: Request, res: Response) =>
     Category.countDocuments({ isActive: true }),
   ]);
 
+  // Add product count if requested
+  let categoriesWithCount = categories;
+  if (withProductCount === 'true') {
+    categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await Product.countDocuments({
+          categoryId: category._id,
+          isActive: true,
+        });
+        return {
+          ...category.toObject(),
+          productCount,
+        };
+      })
+    );
+  }
+
   sendResponse(res, 200, {
-    categories,
+    categories: categoriesWithCount,
     pagination: {
       page,
       limit,

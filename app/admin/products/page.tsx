@@ -229,9 +229,9 @@ export default function AdminProductsPage() {
                       const hasDiscount =
                         typeof product.discountPrice === 'number'
                         && product.discountPrice > 0
-                        && product.discountPrice < product.price;
+                        && product.discountPrice > product.price;
 
-                      const finalPrice = hasDiscount ? product.discountPrice : product.price;
+                      const finalPrice = product.price;
 
                       return (
                         <>
@@ -240,7 +240,7 @@ export default function AdminProductsPage() {
                           </div>
                           {hasDiscount && (
                             <div className="text-xs text-gray-500 line-through">
-                              NPR {product.price.toLocaleString()}
+                              NPR {product.discountPrice.toLocaleString()}
                             </div>
                           )}
                         </>

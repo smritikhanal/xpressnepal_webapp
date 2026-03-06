@@ -39,6 +39,23 @@ const SORT_OPTIONS = [
   { value: 'rating', label: 'Top Rated' },
 ];
 
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function ProductsPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -46,6 +63,7 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 500); // 500ms delay
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState('newest');
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -63,21 +81,27 @@ export default function ProductsPage() {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       const params = new URLSearchParams();
+      
+      // Add pagination
+      params.append('page', page.toString());
+      params.append('limit', '12');
+      
+      // Add filters
       if (selectedCategory !== 'all') params.append('categoryId', selectedCategory);
-      if (searchQuery) params.append('search', searchQuery);
-      if (selectedCategory !== 'all' || searchQuery) {
-        params.append('page', page.toString());
-        params.append('limit', '12');
-      }
-      if (sortBy === 'price-low') params.append('sort', 'price');
-      else if (sortBy === 'price-high') params.append('sort', '-price');
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+      
+      // Add sort parameter - backend expects: newest, price_asc, price_desc, rating
+      if (sortBy === 'newest') params.append('sort', 'newest');
+      else if (sortBy === 'price-low') params.append('sort', 'price_asc');
+      else if (sortBy === 'price-high') params.append('sort', 'price_desc');
+      else if (sortBy === 'rating') params.append('sort', 'rating');
 
-      const response = await fetch(`${backendUrl}/api/products${params.toString() ? `?${params}` : ''}`);
+      const response = await fetch(`${backendUrl}/api/products?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         let fetched: Product[] = data.data?.products || [];
+        // Apply in-stock filter client-side if needed
         if (inStockOnly) fetched = fetched.filter((p) => p.stock > 0);
-        if (sortBy === 'rating') fetched = [...fetched].sort((a, b) => (b.ratingAvg || 0) - (a.ratingAvg || 0));
         setProducts(fetched);
         setTotalPages(data.data?.pagination?.pages || 1);
       }
@@ -86,7 +110,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, selectedCategory, sortBy, searchQuery, inStockOnly]);
+  }, [page, selectedCategory, sortBy, debouncedSearchQuery, inStockOnly]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
   useEffect(() => { fetchCategories(); }, []);
@@ -94,12 +118,18 @@ export default function ProductsPage() {
   const fetchCategories = async () => {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/categories`);
+      const response = await fetch(`${backendUrl}/api/categories?withProductCount=true&limit=500`);
       if (response.ok) {
         const data = await response.json();
-        setCategories(data.data?.categories || []);
+        const fetchedCategories = data.data?.categories || [];
+        // Show all categories
+        setCategories(fetchedCategories);
+      } else {
+        console.error('Failed to fetch categories:', response.status);
       }
-    } catch {}
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
   };
 
   const handleAddToCart = async (e: React.MouseEvent, productId: string, productTitle: string) => {
@@ -178,7 +208,7 @@ export default function ProductsPage() {
               />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
+                  onClick={() => { setSearchQuery(''); setPage(1); }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-4 w-4" />
@@ -208,25 +238,25 @@ export default function ProductsPage() {
             </button>
 
             {/* Category pills */}
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => { setSelectedCategory('all'); setPage(1); }}
-                className={`h-9 px-4 rounded-lg text-sm font-medium border transition-colors ${
+                className={`px-6 py-2 rounded-full text-sm font-medium border-2 transition-all ${
                   selectedCategory === 'all'
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-gray-800 border-gray-300 hover:border-gray-400'
                 }`}
               >
                 All
               </button>
-              {categories.slice(0, 6).map((cat) => (
+              {categories.slice(0, 8).map((cat) => (
                 <button
                   key={cat._id}
                   onClick={() => { setSelectedCategory(cat._id); setPage(1); }}
-                  className={`h-9 px-4 rounded-lg text-sm font-medium border transition-colors whitespace-nowrap ${
+                  className={`px-6 py-2 rounded-full text-sm font-medium border-2 transition-all whitespace-nowrap ${
                     selectedCategory === cat._id
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-gray-800 border-gray-300 hover:border-gray-400'
                   }`}
                 >
                   {cat.name}
@@ -284,7 +314,7 @@ export default function ProductsPage() {
               >
                 <div className="pt-4 mt-4 border-t border-gray-100 flex flex-wrap items-center gap-4">
                   {/* In Stock */}
-                  {/* <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
                     <div
                       onClick={() => { setInStockOnly(!inStockOnly); setPage(1); }}
                       className={`w-10 h-5 rounded-full transition-colors relative ${inStockOnly ? 'bg-primary' : 'bg-gray-200'}`}
@@ -292,7 +322,7 @@ export default function ProductsPage() {
                       <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${inStockOnly ? 'translate-x-5' : 'translate-x-0.5'}`} />
                     </div>
                     <span className="text-sm font-medium text-gray-700">In Stock Only</span>
-                  </label> */}
+                  </label>
 
                   {/* Active filter chips */}
                   {activeFilterCount > 0 && (
@@ -306,13 +336,13 @@ export default function ProductsPage() {
                       {searchQuery && (
                         <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full">
                           "{searchQuery}"
-                          <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchQuery('')} />
+                          <X className="h-3 w-3 cursor-pointer" onClick={() => { setSearchQuery(''); setPage(1); }} />
                         </span>
                       )}
                       {inStockOnly && (
                         <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full">
                           In Stock
-                          <X className="h-3 w-3 cursor-pointer" onClick={() => setInStockOnly(false)} />
+                          <X className="h-3 w-3 cursor-pointer" onClick={() => { setInStockOnly(false); setPage(1); }} />
                         </span>
                       )}
                       <button onClick={clearFilters} className="text-xs text-gray-500 underline hover:text-gray-800">
@@ -354,9 +384,9 @@ export default function ProductsPage() {
             >
               <AnimatePresence mode="popLayout">
                 {products.map((product, index) => {
-                  const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+                  const hasDiscount = product.discountPrice && product.discountPrice > product.price;
                   const discountPct = hasDiscount
-                    ? Math.round(((product.price - product.discountPrice!) / product.price) * 100)
+                    ? Math.round(((product.discountPrice! - product.price) / product.discountPrice!) * 100)
                     : 0;
                   const wishlisted = isInWishlist(product._id);
                   const justAdded = addedId === product._id;
@@ -408,10 +438,10 @@ export default function ProductsPage() {
                               <div className="flex items-center justify-between mt-2">
                                 <div className="flex items-baseline gap-2">
                                   <span className="text-base font-black text-gray-900">
-                                    NPR {(hasDiscount ? product.discountPrice! : product.price).toLocaleString()}
+                                    NPR {product.price.toLocaleString()}
                                   </span>
                                   {hasDiscount && (
-                                    <span className="text-xs text-gray-400 line-through">NPR {product.price.toLocaleString()}</span>
+                                    <span className="text-xs text-gray-400 line-through">NPR {product.discountPrice!.toLocaleString()}</span>
                                   )}
                                 </div>
                                 <button
@@ -532,11 +562,11 @@ export default function ProductsPage() {
                             {/* Price */}
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-base font-black text-gray-900">
-                                NPR {(hasDiscount ? product.discountPrice! : product.price).toLocaleString()}
+                                NPR {product.price.toLocaleString()}
                               </span>
                               {hasDiscount && (
                                 <span className="text-xs text-gray-400 line-through">
-                                  NPR {product.price.toLocaleString()}
+                                  NPR {product.discountPrice!.toLocaleString()}
                                 </span>
                               )}
                             </div>

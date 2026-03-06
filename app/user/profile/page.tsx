@@ -292,6 +292,13 @@ export default function UserProfilePage() {
         }
     }, [user, router, setValue]);
 
+    // Redirect to orders page if orders tab is selected
+    useEffect(() => {
+        if (activeTab === 'orders') {
+            router.push('/orders');
+        }
+    }, [activeTab, router]);
+
     const fetchAddresses = async () => {
         setAddressLoading(true);
         try {
@@ -504,12 +511,20 @@ export default function UserProfilePage() {
     };
 
     const handleDeleteAddress = async (id: string) => {
-        if (!confirm('Delete this address?')) return;
         try {
             await apiClient.addresses.delete(id);
             fetchAddresses();
+            toast({
+                title: 'Address deleted',
+                description: 'The address has been removed from your profile',
+            });
         } catch (err) {
             console.error('Failed to delete address', err);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete address. Please try again.',
+                variant: 'destructive',
+            });
         }
     };
 

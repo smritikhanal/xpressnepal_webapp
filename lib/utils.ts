@@ -10,8 +10,11 @@ export function cn(...inputs: ClassValue[]) {
  * @param url - The image URL from the backend (can be relative or absolute)
  * @returns Normalized URL that works in the current environment
  */
-export function normalizeImageUrl(url: string): string {
-  if (!url) return url;
+export function normalizeImageUrl(url: string | null | undefined): string {
+  // Return placeholder for missing/invalid URLs
+  if (!url || typeof url !== 'string') {
+    return '/placeholder-image.svg';
+  }
   
   // If it's a relative path to backend uploads, use Next.js proxy
   if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {

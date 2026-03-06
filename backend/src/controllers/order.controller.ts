@@ -94,7 +94,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   let totalAmount = 0;
 
   for (const item of validItems) {
-    const price = item.product.discountPrice ?? item.product.price;
+    const price = item.product.price;
 
     orderItems.push({
       productId: item.product._id,

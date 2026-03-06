@@ -171,9 +171,11 @@ export default function CreateProductPage() {
           title: formData.title,
           slug: formData.slug,
           description: formData.description,
-          price: parseFloat(formData.price),
-          discountPrice: formData.discountPrice
+          price: formData.discountPrice
             ? Math.max(parseFloat(formData.price) - parseFloat(formData.discountPrice), 0)
+            : parseFloat(formData.price),
+          discountPrice: formData.discountPrice
+            ? parseFloat(formData.price)
             : undefined,
           categoryId: formData.categoryId,
           brand: formData.brand || undefined,

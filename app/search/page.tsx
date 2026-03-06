@@ -35,17 +35,21 @@ export default function SearchPage() {
     setLoading(true);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      let url = `${backendUrl}/api/products?search=${encodeURIComponent(query)}`;
+      const params = new URLSearchParams();
+      params.append('search', query);
       
+      // Backend expects: newest, price_asc, price_desc, rating
       if (sortBy === 'price-low') {
-        url += '&sortBy=price&order=asc';
+        params.append('sort', 'price_asc');
       } else if (sortBy === 'price-high') {
-        url += '&sortBy=price&order=desc';
+        params.append('sort', 'price_desc');
       } else if (sortBy === 'rating') {
-        url += '&sortBy=ratingAvg&order=desc';
+        params.append('sort', 'rating');
+      } else {
+        params.append('sort', 'newest');
       }
 
-      const response = await fetch(url);
+      const response = await fetch(`${backendUrl}/api/products?${params.toString()}`);
       const data = await response.json();
       
       if (data.success) {
@@ -144,9 +148,9 @@ export default function SearchPage() {
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </Link>
-                  {product.discountPrice && (
+                  {product.discountPrice && product.discountPrice > product.price && (
                     <Badge className="absolute top-2 left-2 bg-red-500">
-                      {Math.round(((product.price - product.discountPrice) / product.price) * 100)}% OFF
+                      {Math.round(((product.discountPrice - product.price) / product.discountPrice) * 100)}% OFF
                     </Badge>
                   )}
                   <Button
@@ -186,13 +190,13 @@ export default function SearchPage() {
                   </div>
 
                   <div className="flex items-center gap-2 mb-3">
-                    {product.discountPrice ? (
+                    {product.discountPrice && product.discountPrice > product.price ? (
                       <>
                         <span className="text-xl font-bold text-gray-900">
-                          NPR {product.discountPrice.toFixed(2)}
+                          NPR {product.price.toFixed(2)}
                         </span>
                         <span className="text-sm text-gray-500 line-through">
-                          NPR {product.price.toFixed(2)}
+                          NPR {product.discountPrice.toFixed(2)}
                         </span>
                       </>
                     ) : (

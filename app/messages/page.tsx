@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useSocket } from '@/hooks/use-socket';
 import { Mail, Send as SendIcon, Package, ArrowLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -48,28 +49,15 @@ export default function MessagesPage() {
   const { user, isAuthenticated } = useAuthStore();
   const router = useRouter();
   const { toast } = useToast();
+  const { on, off, isConnected } = useSocket();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/login');
-      return;
-    }
-
-    // Redirect sellers to their messages page
-    if (user?.role === 'seller') {
-      router.push('/seller/messages');
-      return;
-    }
-
-    fetchAllMessages();
-  }, [isAuthenticated, user, router]);
-
-  const fetchAllMessages = async () => {
+  const fetchAllMessages = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       
@@ -135,8 +123,8 @@ export default function MessagesPage() {
             conversation.unreadCount++;
           }
 
-          // Update last message if this message is newer
-          if (new Date(msg.createdAt) > new Date(conversation.lastMessageTime)) {
+          // Update last message time if this message is newer
+          if (new Date(msg.createdAt).getTime() > new Date(conversation.lastMessageTime).getTime()) {
             conversation.lastMessage = msg.message;
             conversation.lastMessageTime = msg.createdAt;
           }
@@ -161,7 +149,58 @@ export default function MessagesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty deps, fetchAllMessages doesn't need external dependencies
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
+    }
+
+    // Redirect sellers to their messages page
+    if (user?.role === 'seller') {
+      router.push('/seller/messages');
+      return;
+    }
+
+    fetchAllMessages();
+  }, [isAuthenticated, user, router, fetchAllMessages]);
+
+  // Real-time message updates via Socket.IO
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Listen for new messages
+    const handleNewMessage = (data: any) => {
+      console.log('New message received:', data);
+      // Refresh messages to get the latest data
+      fetchAllMessages();
+      
+      // Show toast notification if message is not from current user
+      if (data.senderId !== user?.id) {
+        toast({
+          title: 'New Message',
+          description: `You have a new message`,
+          variant: 'default',
+        });
+      }
+    };
+
+    on('message:new', handleNewMessage);
+
+    // Set up polling as fallback (every 30 seconds)
+    pollingIntervalRef.current = setInterval(() => {
+      fetchAllMessages();
+    }, 30000);
+
+    // Cleanup
+    return () => {
+      off('message:new', handleNewMessage);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [isAuthenticated, user, on, off, toast, fetchAllMessages]);
 
   const markAsRead = async (messageIds: string[]) => {
     try {

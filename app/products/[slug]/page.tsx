@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -31,7 +31,8 @@ import {
   Clock,
   AlertCircle,
   Send,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { Product, Review } from '@/types';
 import { useAuthStore } from '@/store/auth-store';
@@ -42,6 +43,7 @@ import toast from 'react-hot-toast';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = params.slug as string;
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -77,7 +79,7 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
-      setFinalPrice(product.discountPrice || product.price);
+      setFinalPrice(product.price);
     }
   }, [product]);
 
@@ -323,7 +325,7 @@ export default function ProductDetailPage() {
   }
 
   const discount = product.discountPrice 
-    ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+    ? Math.round(((product.discountPrice - product.price) / product.discountPrice) * 100)
     : 0;
 
   return (
@@ -515,15 +517,15 @@ export default function ProductDetailPage() {
                 <span className="text-5xl font-bold text-primary">
                   NPR {finalPrice.toLocaleString()}
                 </span>
-                {product.discountPrice && finalPrice === (product.discountPrice || product.price) && (
+                {product.discountPrice && product.discountPrice > product.price && (
                   <span className="text-2xl text-muted-foreground line-through">
-                    NPR {product.price.toLocaleString()}
+                    NPR {product.discountPrice.toLocaleString()}
                   </span>
                 )}
               </div>
-              {discount > 0 && finalPrice === (product.discountPrice || product.price) && (
+              {discount > 0 && product.discountPrice && product.discountPrice > product.price && (
                 <p className="text-sm text-green-600 font-semibold mt-2">
-                  You save NPR {(product.price - (product.discountPrice || product.price)).toLocaleString()}
+                  You save NPR {(product.discountPrice - product.price).toLocaleString()}
                 </p>
               )}
             </div>
@@ -548,7 +550,7 @@ export default function ProductDetailPage() {
             {/* Product Attributes */}
             <ProductAttributeSelector
               attributes={product.attributes}
-              basePrice={product.discountPrice || product.price}
+              basePrice={product.price}
               onPriceChange={setFinalPrice}
             />
 
@@ -584,64 +586,84 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <Button
+                  size="lg"
+                  className="flex-1 h-14 text-lg rounded-2xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0}
+                >
+                  <AnimatePresence mode="wait">
+                    {addedToCart ? (
+                      <motion.div
+                        key="added"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Check className="h-6 w-6" />
+                        Added!
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="add"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <ShoppingCart className="h-6 w-6" />
+                        Add to Cart
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className={`h-14 w-14 rounded-2xl border-2 transition-all ${
+                    isWishlisted
+                      ? 'bg-red-50 border-red-300 hover:bg-red-100'
+                      : 'border-primary/20 hover:border-primary'
+                  }`}
+                  onClick={handleToggleWishlist}
+                >
+                  <Heart
+                    className={`h-6 w-6 transition-colors ${
+                      isWishlisted ? 'fill-red-500 text-red-500' : 'text-primary'
+                    }`}
+                  />
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-14 w-14 rounded-2xl border-2 border-primary/20 hover:border-primary"
+                  onClick={handleShare}
+                >
+                  <Share2 className="h-6 w-6 text-primary" />
+                </Button>
+              </div>
+              
+              {/* Buy Now Button */}
               <Button
                 size="lg"
-                className="flex-1 h-14 text-lg rounded-2xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all"
-                onClick={handleAddToCart}
+                className="w-full h-14 text-lg rounded-2xl bg-green-600 hover:bg-green-700 shadow-lg hover:shadow-xl transition-all"
+                onClick={async () => {
+                  const success = await addItem(product._id, quantity);
+                  if (success) {
+                    router.push('/checkout');
+                  } else {
+                    toast.error('Failed to add item to cart');
+                  }
+                }}
                 disabled={product.stock === 0}
               >
-                <AnimatePresence mode="wait">
-                  {addedToCart ? (
-                    <motion.div
-                      key="added"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="flex items-center gap-2"
-                    >
-                      <Check className="h-6 w-6" />
-                      Added!
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="add"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="flex items-center gap-2"
-                    >
-                      <ShoppingCart className="h-6 w-6" />
-                      Add to Cart
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className={`h-14 w-14 rounded-2xl border-2 transition-all ${
-                  isWishlisted
-                    ? 'bg-red-50 border-red-300 hover:bg-red-100'
-                    : 'border-primary/20 hover:border-primary'
-                }`}
-                onClick={handleToggleWishlist}
-              >
-                <Heart
-                  className={`h-6 w-6 transition-colors ${
-                    isWishlisted ? 'fill-red-500 text-red-500' : 'text-primary'
-                  }`}
-                />
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 w-14 rounded-2xl border-2 border-primary/20 hover:border-primary"
-                onClick={handleShare}
-              >
-                <Share2 className="h-6 w-6 text-primary" />
+                <Zap className="h-6 w-6 mr-2" />
+                Buy Now
               </Button>
             </div>
 
@@ -959,11 +981,11 @@ export default function ProductDetailPage() {
                         </div>
                         <div className="flex items-baseline gap-2">
                           <span className="text-2xl font-bold text-primary">
-                            NPR {(relatedProduct.discountPrice || relatedProduct.price).toLocaleString()}
+                            NPR {relatedProduct.price.toLocaleString()}
                           </span>
-                          {relatedProduct.discountPrice && (
+                          {relatedProduct.discountPrice && relatedProduct.discountPrice > relatedProduct.price && (
                             <span className="text-sm text-muted-foreground line-through">
-                              NPR {relatedProduct.price.toLocaleString()}
+                              NPR {relatedProduct.discountPrice.toLocaleString()}
                             </span>
                           )}
                         </div>

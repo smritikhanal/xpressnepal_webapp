@@ -745,11 +745,12 @@ export default function Home() {
               className="grid grid-cols-2 md:grid-cols-4 gap-4"
             >
               {flashSaleProducts.map((product: Product) => {
-                const hasDiscount = product.discountPrice && product.discountPrice < product.price;
+                const hasDiscount = product.discountPrice && product.discountPrice > product.price;
                 const discountPercent = hasDiscount 
-                  ? Math.round(((product.price - product.discountPrice!) / product.price) * 100)
+                  ? Math.round(((product.discountPrice! - product.price) / product.discountPrice!) * 100)
                   : 20;
-                const displayPrice = hasDiscount ? product.discountPrice! : Math.round(product.price * 0.8);
+                const displayPrice = product.price;
+                const originalPrice = hasDiscount ? product.discountPrice! : Math.round(product.price / 0.8);
                 
                 return (
                   <motion.div
@@ -792,7 +793,7 @@ export default function Home() {
                               NPR {displayPrice.toFixed(0)}
                             </span>
                             <span className="text-sm text-gray-400 line-through">
-                              NPR {product.price.toFixed(0)}
+                              NPR {originalPrice.toFixed(0)}
                             </span>
                           </div>
                         </CardContent>
